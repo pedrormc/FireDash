@@ -1,29 +1,71 @@
-import React, { useState } from 'react';
-import { X, PlusCircle, MapPin, AlertTriangle, Flame } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, PlusCircle, MapPin, AlertTriangle, Flame, Loader2 } from 'lucide-react';
+import { apiFetch } from '../services/api';
+import { createIncident } from '../services/incidents';
+import type { ApiIncident } from '../services/incidents';
 
 interface NovoAlertaModalProps {
   open: boolean;
   onClose: () => void;
+  onCreated?: (incident: ApiIncident) => void;
 }
 
-const TIPOS = ['Incêndio Florestal', 'Incêndio Estrutural', 'Incêndio Residencial', 'Acidente de Trânsito', 'Resgate', 'Vazamento de Gás', 'Inundação', 'Desabamento'];
 const GRAVIDADES = ['Baixa', 'Média', 'Alta', 'Crítica'];
 
-export function NovoAlertaModal({ open, onClose }: NovoAlertaModalProps) {
+export function NovoAlertaModal({ open, onClose, onCreated }: NovoAlertaModalProps) {
   const [form, setForm] = useState({ tipo: '', gravidade: 'Alta', bairro: '', descricao: '' });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [tipos, setTipos] = useState<string[]>([]);
+
+  // Fetch tipos from API
+  useEffect(() => {
+    if (open) {
+      apiFetch<{ id: number; nome: string; ativo: boolean }[]>('/tipos')
+        .then((data) => setTipos(data.map((t) => t.nome)))
+        .catch(() => {});
+    }
+  }, [open]);
 
   if (!open) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.tipo || !form.bairro) return;
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setForm({ tipo: '', gravidade: 'Alta', bairro: '', descricao: '' });
-      onClose();
-    }, 1800);
+
+    setError('');
+    setSubmitting(true);
+
+    try {
+      // Generate ID: BMB-XXX with timestamp-based suffix
+      const id = `BMB-${Date.now().toString().slice(-4)}`;
+      const today = new Date().toISOString().split('T')[0];
+      const hora = new Date().getHours();
+
+      const newIncident = await createIncident({
+        id,
+        tipo: form.tipo,
+        gravidade: form.gravidade,
+        bairro: form.bairro,
+        status: 'Em Andamento',
+        data: today,
+        hora,
+        descricao: form.descricao || undefined,
+      });
+
+      onCreated?.(newIncident);
+      setSubmitted(true);
+      setTimeout(() => {
+        setSubmitted(false);
+        setForm({ tipo: '', gravidade: 'Alta', bairro: '', descricao: '' });
+        onClose();
+      }, 1800);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao criar ocorrência');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -69,7 +111,7 @@ export function NovoAlertaModal({ open, onClose }: NovoAlertaModalProps) {
                   className="w-full px-3 py-2.5 bg-black/30 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-fire-red"
                 >
                   <option value="">Selecione...</option>
-                  {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {tipos.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
 
@@ -125,6 +167,12 @@ export function NovoAlertaModal({ open, onClose }: NovoAlertaModalProps) {
               />
             </div>
 
+            {error && (
+              <div className="bg-fire-red/10 border border-fire-red/30 rounded-xl px-4 py-3 text-fire-red text-xs font-medium">
+                {error}
+              </div>
+            )}
+
             <div className="flex items-center space-x-3 pt-1">
               <button
                 type="button"
@@ -135,10 +183,17 @@ export function NovoAlertaModal({ open, onClose }: NovoAlertaModalProps) {
               </button>
               <button
                 type="submit"
-                className="flex-1 flex items-center justify-center space-x-2 bg-fire-red hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-sm shadow-lg shadow-fire-red/20"
+                disabled={submitting}
+                className="flex-1 flex items-center justify-center space-x-2 bg-fire-red hover:bg-red-700 disabled:opacity-50 text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-sm shadow-lg shadow-fire-red/20"
               >
-                <AlertTriangle className="w-4 h-4" />
-                <span>Emitir Alerta</span>
+                {submitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>Emitir Alerta</span>
+                  </>
+                )}
               </button>
             </div>
           </form>

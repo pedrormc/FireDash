@@ -10,9 +10,8 @@ type Periodo = 'hoje' | 'semana' | 'mes';
 interface ChartsSectionProps {
   incidents: Incident[];
   periodo: Periodo;
+  today?: string;
 }
-
-const TODAY = '2026-03-06';
 
 const TooltipBase = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
@@ -31,14 +30,18 @@ const TooltipBase = ({ active, payload, label }: any) => {
 const AXIS_TICK = { fill: '#9ca3af', fontSize: 9, fontWeight: 700 };
 const GRID = <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />;
 
-export function ChartsSection({ incidents, periodo }: ChartsSectionProps) {
+export function ChartsSection({ incidents, periodo, today: todayProp }: ChartsSectionProps) {
+  const TODAY = todayProp || new Date().toISOString().split('T')[0];
+
+  // Normalize incident date (API may return ISO timestamp)
+  const normalizeDate = (d: string) => (typeof d === 'string' ? d.split('T')[0] : d);
 
   // ── Left chart: temporal flow (area) ──────────────────────────
   const areaData = useMemo(() => {
     if (periodo === 'hoje') {
       const counts: Record<number, number> = {};
       incidents.forEach((inc) => {
-        if (inc.data === TODAY && inc.hora !== undefined)
+        if (normalizeDate(inc.data) === TODAY && inc.hora !== undefined)
           counts[inc.hora] = (counts[inc.hora] || 0) + 1;
       });
       return Array.from({ length: 24 }, (_, h) => ({
@@ -48,26 +51,26 @@ export function ChartsSection({ incidents, periodo }: ChartsSectionProps) {
     }
     if (periodo === 'semana') {
       return Array.from({ length: 7 }, (_, i) => {
-        const d = new Date('2026-03-06');
+        const d = new Date(TODAY);
         d.setDate(d.getDate() - (6 - i));
         const dateStr = d.toISOString().split('T')[0];
         return {
           label: d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }),
-          ocorrencias: incidents.filter((inc) => inc.data === dateStr).length,
+          ocorrencias: incidents.filter((inc) => normalizeDate(inc.data) === dateStr).length,
         };
       });
     }
     // mes
     return Array.from({ length: 30 }, (_, i) => {
-      const d = new Date('2026-03-06');
+      const d = new Date(TODAY);
       d.setDate(d.getDate() - (29 - i));
       const dateStr = d.toISOString().split('T')[0];
       return {
         label: `${d.getDate()}/${d.getMonth() + 1}`,
-        ocorrencias: incidents.filter((inc) => inc.data === dateStr).length,
+        ocorrencias: incidents.filter((inc) => normalizeDate(inc.data) === dateStr).length,
       };
     });
-  }, [incidents, periodo]);
+  }, [incidents, periodo, TODAY]);
 
   // ── Right chart: by type (bar) ─────────────────────────────────
   const barData = useMemo(() => {

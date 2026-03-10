@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { LayoutDashboard, FileText, Map, Settings, Shield } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { LayoutDashboard, FileText, Map, Settings } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { Sidebar } from './components/Sidebar';
@@ -12,8 +12,12 @@ import { NovoAlertaModal } from './components/NovoAlertaModal';
 import { RelatoriosPage } from './pages/RelatoriosPage';
 import { MapaPage } from './pages/MapaPage';
 import { ConfiguracoesPage } from './pages/ConfiguracoesPage';
+import { AdminPage } from './pages/AdminPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { alerts, kpis, emergencyIncidents, TIPOS_OCORRENCIA } from './data/mockData';
+import { fetchIncidents, deleteIncident } from './services/incidents';
+import { fetchKpis } from './services/kpis';
+import type { ApiIncident } from './services/incidents';
+import type { Kpi } from './services/kpis';
 import type { Incident } from './data/mockData';
 
 type Page = 'dashboard' | 'relatorios' | 'mapa' | 'configuracoes' | 'admin';
@@ -34,14 +38,9 @@ const ROLE_PAGES: Record<string, Page[]> = {
   visualizador:  ['dashboard'],
 };
 
-// Boundaries for period filter (today = 2026-03-06)
-const TODAY       = '2026-03-06';
-const WEEK_START  = '2026-02-27'; // 7 days ago
-const MONTH_START = '2026-02-04'; // 30 days ago
-
 function AuthenticatedApp() {
   const { user, logout } = useAuth();
-  const [currentPage, setCurrentPage]       = useState<Page>('dashboard');
+  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [novoAlertaOpen, setNovoAlertaOpen] = useState(false);
 
   // ── Theme ──────────────────────────────────────────────────
@@ -57,30 +56,99 @@ function AuthenticatedApp() {
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
   const isDarkMode = theme === 'dark';
 
-  // Incidents state — abstracted for future API integration
-  const [incidents, setIncidents] = useState<Incident[]>(emergencyIncidents);
+  // ── Data from API ──────────────────────────────────────────
+  const [incidents, setIncidents] = useState<ApiIncident[]>([]);
+  const [kpis, setKpis] = useState<Kpi[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Dashboard filters
-  const [periodo,         setPeriodo]         = useState<Periodo>('semana');
-  const [filterTipo,      setFilterTipo]      = useState('Todos');
+  const loadData = useCallback(async () => {
+    try {
+      const [incData, kpiData] = await Promise.all([
+        fetchIncidents(),
+        fetchKpis(),
+      ]);
+      setIncidents(incData);
+      setKpis(kpiData);
+    } catch (err) {
+      console.error('Erro ao carregar dados:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Dashboard filters (client-side on already-fetched data)
+  const [periodo, setPeriodo] = useState<Periodo>('semana');
+  const [filterTipo, setFilterTipo] = useState('Todos');
   const [filterGravidade, setFilterGravidade] = useState('Todas');
-  const [filterStatus,    setFilterStatus]    = useState('Todos');
+  const [filterStatus, setFilterStatus] = useState('Todos');
+
+  // Derive today's date dynamically
+  const today = useMemo(() => {
+    const d = new Date();
+    return d.toISOString().split('T')[0];
+  }, []);
 
   const filteredIncidents = useMemo(() => {
+    const todayDate = new Date(today);
+    const weekStart = new Date(todayDate);
+    weekStart.setDate(weekStart.getDate() - 7);
+    const monthStart = new Date(todayDate);
+    monthStart.setDate(monthStart.getDate() - 30);
+
+    const weekStr = weekStart.toISOString().split('T')[0];
+    const monthStr = monthStart.toISOString().split('T')[0];
+
     return incidents.filter((inc) => {
-      if (periodo === 'hoje'   && inc.data !== TODAY)       return false;
-      if (periodo === 'semana' && inc.data < WEEK_START)    return false;
-      if (periodo === 'mes'    && inc.data < MONTH_START)   return false;
-      if (filterTipo      !== 'Todos'  && inc.tipo      !== filterTipo)      return false;
-      if (filterGravidade !== 'Todas'  && inc.gravidade !== filterGravidade) return false;
-      if (filterStatus    !== 'Todos'  && inc.status    !== filterStatus)    return false;
+      // Normalize date — API returns date as ISO string or YYYY-MM-DD
+      const incDate = typeof inc.data === 'string' ? inc.data.split('T')[0] : inc.data;
+      if (periodo === 'hoje' && incDate !== today) return false;
+      if (periodo === 'semana' && incDate < weekStr) return false;
+      if (periodo === 'mes' && incDate < monthStr) return false;
+      if (filterTipo !== 'Todos' && inc.tipo !== filterTipo) return false;
+      if (filterGravidade !== 'Todas' && inc.gravidade !== filterGravidade) return false;
+      if (filterStatus !== 'Todos' && inc.status !== filterStatus) return false;
       return true;
     });
-  }, [incidents, periodo, filterTipo, filterGravidade, filterStatus]);
+  }, [incidents, periodo, filterTipo, filterGravidade, filterStatus, today]);
 
-  // Abstract delete for future API swap: DELETE /api/incidents/:id
-  const handleDeleteIncident = (id: string) => {
-    setIncidents((prev) => prev.filter((inc) => inc.id !== id));
+  // Derive tipos from loaded incidents for filter dropdown
+  const tiposOcorrencia = useMemo(() => {
+    const tipos = new Set(incidents.map((inc) => inc.tipo));
+    return Array.from(tipos).sort();
+  }, [incidents]);
+
+  // Alerts derived from latest "Em Andamento" incidents
+  const alerts = useMemo(() => {
+    return incidents
+      .filter((inc) => inc.status === 'Em Andamento')
+      .slice(0, 3)
+      .map((inc) => ({
+        id: inc.id,
+        location: inc.bairro,
+        time: inc.hora !== undefined && inc.hora !== null ? `${String(inc.hora).padStart(2, '0')}:00` : '--:--',
+        title: `${inc.tipo} - ${inc.bairro}`,
+        status: inc.status,
+        statusColor: inc.gravidade === 'Crítica' ? 'fire-red' : inc.gravidade === 'Alta' ? 'fire-orange' : 'fire-green',
+      }));
+  }, [incidents]);
+
+  // Delete incident via API
+  const handleDeleteIncident = async (id: string) => {
+    try {
+      await deleteIncident(id);
+      setIncidents((prev) => prev.filter((inc) => inc.id !== id));
+    } catch (err) {
+      console.error('Erro ao deletar:', err);
+    }
+  };
+
+  // Called after creating a new incident
+  const handleIncidentCreated = (newInc: ApiIncident) => {
+    setIncidents((prev) => [newInc, ...prev]);
   };
 
   const hasActiveFilters = filterTipo !== 'Todos' || filterGravidade !== 'Todas' || filterStatus !== 'Todos';
@@ -95,10 +163,10 @@ function AuthenticatedApp() {
   };
 
   const navItems = [
-    { page: 'dashboard'     as Page, icon: <LayoutDashboard className="h-5 w-5" />, label: 'Dashboard' },
-    { page: 'relatorios'    as Page, icon: <FileText        className="h-5 w-5" />, label: 'Relatórios' },
-    { page: 'mapa'          as Page, icon: <Map             className="h-5 w-5" />, label: 'Mapa' },
-    { page: 'configuracoes' as Page, icon: <Settings        className="h-5 w-5" />, label: 'Config.' },
+    { page: 'dashboard' as Page, icon: <LayoutDashboard className="h-5 w-5" />, label: 'Dashboard' },
+    { page: 'relatorios' as Page, icon: <FileText className="h-5 w-5" />, label: 'Relatórios' },
+    { page: 'mapa' as Page, icon: <Map className="h-5 w-5" />, label: 'Mapa' },
+    { page: 'configuracoes' as Page, icon: <Settings className="h-5 w-5" />, label: 'Config.' },
   ];
 
   // Filter nav items by role
@@ -128,7 +196,7 @@ function AuthenticatedApp() {
             onToggleTheme={toggleTheme}
           />
 
-          {/* Page content — extra bottom padding on mobile for tab bar */}
+          {/* Page content */}
           <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
 
             {/* ── DASHBOARD ── */}
@@ -169,7 +237,7 @@ function AuthenticatedApp() {
                         className="px-3 py-1.5 bg-black/30 border border-white/10 rounded-lg text-xs text-white focus:outline-none focus:border-fire-red"
                       >
                         <option value="Todos">Todos</option>
-                        {TIPOS_OCORRENCIA.map((t) => (
+                        {tiposOcorrencia.map((t) => (
                           <option key={t} value={t}>{t}</option>
                         ))}
                       </select>
@@ -227,25 +295,28 @@ function AuthenticatedApp() {
                   </div>
                 </div>
 
-                <ChartsSection incidents={filteredIncidents} periodo={periodo} />
+                <ChartsSection incidents={filteredIncidents} periodo={periodo} today={today} />
 
                 <ZoneStatus incidents={filteredIncidents} />
 
                 <IncidentTable
                   incidents={filteredIncidents}
-                  onDelete={handleDeleteIncident}
+                  onDelete={user?.role !== 'visualizador' ? handleDeleteIncident : undefined}
                 />
               </div>
             )}
 
             {currentPage === 'relatorios' && (
               <ProtectedRoute allowedRoles={['admin', 'operador']}>
-                <RelatoriosPage />
+                <RelatoriosPage
+                  incidents={incidents}
+                  onDelete={user?.role !== 'visualizador' ? handleDeleteIncident : undefined}
+                />
               </ProtectedRoute>
             )}
             {currentPage === 'mapa' && (
               <ProtectedRoute allowedRoles={['admin', 'operador']}>
-                <MapaPage />
+                <MapaPage incidents={incidents} />
               </ProtectedRoute>
             )}
             {currentPage === 'configuracoes' && (
@@ -255,12 +326,7 @@ function AuthenticatedApp() {
             )}
             {currentPage === 'admin' && (
               <ProtectedRoute allowedRoles={['admin']}>
-                <div className="p-4 md:p-8">
-                  <div className="bg-fire-card border border-white/5 rounded-2xl p-8 text-center">
-                    <Shield className="h-12 w-12 text-fire-muted mx-auto mb-4" />
-                    <p className="text-fire-muted text-sm">Painel Admin — será implementado na Fase 4</p>
-                  </div>
-                </div>
+                <AdminPage />
               </ProtectedRoute>
             )}
           </div>
@@ -283,7 +349,11 @@ function AuthenticatedApp() {
         ))}
       </nav>
 
-      <NovoAlertaModal open={novoAlertaOpen} onClose={() => setNovoAlertaOpen(false)} />
+      <NovoAlertaModal
+        open={novoAlertaOpen}
+        onClose={() => setNovoAlertaOpen(false)}
+        onCreated={handleIncidentCreated}
+      />
     </div>
   );
 }

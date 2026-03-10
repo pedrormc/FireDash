@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Bell, Shield, Wifi, Users, Save, ChevronRight } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -18,6 +19,7 @@ interface ConfiguracoesPageProps {
 }
 
 export function ConfiguracoesPage({ isDarkMode, onToggleDarkMode }: ConfiguracoesPageProps) {
+  const { user } = useAuth();
   const [settings, setSettings] = useState({
     alertSom: true,
     alertPopup: true,
@@ -148,22 +150,31 @@ export function ConfiguracoesPage({ isDarkMode, onToggleDarkMode }: Configuracoe
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-fire-muted block mb-1">Nome</label>
               <input
-                defaultValue="Cel. Marcos Silva"
+                defaultValue={user?.nome || ''}
                 className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-fire-red"
               />
             </div>
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-fire-muted block mb-1">Cargo</label>
               <input
-                defaultValue="Comandante de Operações"
+                defaultValue={user?.cargo || ''}
                 className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-fire-red"
               />
             </div>
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-fire-muted block mb-1">E-mail</label>
               <input
-                defaultValue="marcos.silva@bombeiros.gov.br"
-                className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-fire-red"
+                defaultValue={user?.email || ''}
+                readOnly
+                className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-xl text-sm text-fire-muted focus:outline-none cursor-not-allowed"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-fire-muted block mb-1">Role</label>
+              <input
+                value={user?.role || ''}
+                readOnly
+                className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-xl text-sm text-fire-muted focus:outline-none cursor-not-allowed"
               />
             </div>
           </div>

@@ -1,20 +1,23 @@
 import React, { useState } from 'react';
-import { FileText, Download, Filter, Search, ChevronDown, Eye } from 'lucide-react';
-import { emergencyIncidents } from '../data/mockData';
+import { FileText, Download, Filter, Search, Eye } from 'lucide-react';
 import { IncidentModal } from '../components/IncidentModal';
-
-const allReports = emergencyIncidents;
+import type { Incident } from '../data/mockData';
 
 const GRAVIDADES = ['Todas', 'Crítica', 'Alta', 'Média', 'Baixa'];
 const STATUS_OPTIONS = ['Todos', 'Em Andamento', 'Finalizado'];
 
-export function RelatoriosPage() {
+interface RelatoriosPageProps {
+  incidents: Incident[];
+  onDelete?: (id: string) => void;
+}
+
+export function RelatoriosPage({ incidents, onDelete }: RelatoriosPageProps) {
   const [search, setSearch] = useState('');
   const [gravidade, setGravidade] = useState('Todas');
   const [status, setStatus] = useState('Todos');
-  const [selectedIncident, setSelectedIncident] = useState<(typeof allReports)[0] | null>(null);
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 
-  const filtered = allReports.filter((inc) => {
+  const filtered = incidents.filter((inc) => {
     const matchSearch =
       inc.id.toLowerCase().includes(search.toLowerCase()) ||
       inc.tipo.toLowerCase().includes(search.toLowerCase()) ||
@@ -164,7 +167,11 @@ export function RelatoriosPage() {
         </div>
       </div>
 
-      <IncidentModal incident={selectedIncident} onClose={() => setSelectedIncident(null)} />
+      <IncidentModal
+        incident={selectedIncident}
+        onClose={() => setSelectedIncident(null)}
+        onDelete={onDelete ? (id) => { onDelete(id); setSelectedIncident(null); } : undefined}
+      />
     </>
   );
 }

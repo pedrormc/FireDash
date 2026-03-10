@@ -1,75 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { AlertTriangle, Radio } from 'lucide-react';
+import type { ApiIncident } from '../services/incidents';
 
 const BRASILIA_CENTER: [number, number] = [-15.7801, -47.9292];
 
-const incidents = [
-  // Originais
-  { id: 'BMB-101', tipo: 'Incêndio Estrutural',    bairro: 'Asa Norte',          gravidade: 'Alta',    lat: -15.7441, lng: -47.8825 },
-  { id: 'BMB-103', tipo: 'Resgate',                 bairro: 'Taguatinga',         gravidade: 'Crítica', lat: -15.8330, lng: -48.0520 },
-  { id: 'BMB-105', tipo: 'Incêndio Florestal',      bairro: 'Planaltina',         gravidade: 'Crítica', lat: -15.6180, lng: -47.6510 },
-  { id: 'BMB-110', tipo: 'Incêndio Residencial',    bairro: 'Sobradinho',         gravidade: 'Alta',    lat: -15.6510, lng: -47.7900 },
-  // Novos — Plano Piloto e arredores
-  { id: 'BMB-111', tipo: 'Vazamento de Gás',        bairro: 'Asa Sul',            gravidade: 'Alta',    lat: -15.8012, lng: -47.8867 },
-  { id: 'BMB-112', tipo: 'Incêndio Residencial',    bairro: 'Cruzeiro',           gravidade: 'Média',   lat: -15.7897, lng: -47.9394 },
-  { id: 'BMB-113', tipo: 'Acidente de Trânsito',    bairro: 'Sudoeste',           gravidade: 'Baixa',   lat: -15.7965, lng: -47.9315 },
-  { id: 'BMB-114', tipo: 'Incêndio Estrutural',     bairro: 'Octogonal',          gravidade: 'Média',   lat: -15.8064, lng: -47.9401 },
-  { id: 'BMB-115', tipo: 'Resgate',                 bairro: 'Lago Norte',         gravidade: 'Alta',    lat: -15.7193, lng: -47.8395 },
-  { id: 'BMB-116', tipo: 'Inundação',               bairro: 'Lago Sul',           gravidade: 'Média',   lat: -15.8426, lng: -47.8818 },
-  { id: 'BMB-117', tipo: 'Incêndio Florestal',      bairro: 'Lago Sul',           gravidade: 'Alta',    lat: -15.8550, lng: -47.8650 },
-  { id: 'BMB-118', tipo: 'Desabamento',             bairro: 'Estrutural',         gravidade: 'Crítica', lat: -15.7756, lng: -47.9902 },
-  { id: 'BMB-119', tipo: 'Vazamento de Gás',        bairro: 'Guará',              gravidade: 'Alta',    lat: -15.8173, lng: -47.9780 },
-  { id: 'BMB-120', tipo: 'Acidente de Trânsito',    bairro: 'SIA',                gravidade: 'Média',   lat: -15.8271, lng: -47.9414 },
-  { id: 'BMB-121', tipo: 'Incêndio Residencial',    bairro: 'Noroeste',           gravidade: 'Baixa',   lat: -15.7600, lng: -47.9350 },
-  { id: 'BMB-122', tipo: 'Resgate',                 bairro: 'Varjão',             gravidade: 'Alta',    lat: -15.7173, lng: -47.8753 },
-  { id: 'BMB-123', tipo: 'Incêndio Estrutural',     bairro: 'SQN 314',            gravidade: 'Crítica', lat: -15.7570, lng: -47.8950 },
-  { id: 'BMB-124', tipo: 'Acidente de Trânsito',    bairro: 'EPNB',               gravidade: 'Alta',    lat: -15.8130, lng: -47.8820 },
-  { id: 'BMB-125', tipo: 'Inundação',               bairro: 'Park Way',           gravidade: 'Baixa',   lat: -15.8627, lng: -47.9334 },
-  // Taguatinga / Ceilândia / Águas Claras
-  { id: 'BMB-126', tipo: 'Incêndio Comercial',      bairro: 'Taguatinga Sul',     gravidade: 'Alta',    lat: -15.8450, lng: -48.0460 },
-  { id: 'BMB-127', tipo: 'Resgate',                 bairro: 'Ceilândia Norte',    gravidade: 'Crítica', lat: -15.7950, lng: -48.1130 },
-  { id: 'BMB-128', tipo: 'Incêndio Residencial',    bairro: 'Ceilândia Sul',      gravidade: 'Alta',    lat: -15.8353, lng: -48.1093 },
-  { id: 'BMB-129', tipo: 'Vazamento de Gás',        bairro: 'Águas Claras',       gravidade: 'Média',   lat: -15.8332, lng: -48.0205 },
-  { id: 'BMB-130', tipo: 'Desabamento',             bairro: 'Vicente Pires',      gravidade: 'Alta',    lat: -15.8099, lng: -48.0434 },
-  { id: 'BMB-131', tipo: 'Incêndio Florestal',      bairro: 'Ceilândia Leste',    gravidade: 'Crítica', lat: -15.8080, lng: -48.0950 },
-  { id: 'BMB-132', tipo: 'Acidente de Trânsito',    bairro: 'EPIA Sul',           gravidade: 'Alta',    lat: -15.8700, lng: -48.0100 },
-  // Samambaia / Riacho Fundo / Recanto
-  { id: 'BMB-133', tipo: 'Incêndio Residencial',    bairro: 'Samambaia Norte',    gravidade: 'Média',   lat: -15.8600, lng: -48.0700 },
-  { id: 'BMB-134', tipo: 'Incêndio Florestal',      bairro: 'Samambaia Sul',      gravidade: 'Crítica', lat: -15.8900, lng: -48.0900 },
-  { id: 'BMB-135', tipo: 'Resgate',                 bairro: 'Riacho Fundo I',     gravidade: 'Alta',    lat: -15.8806, lng: -47.9972 },
-  { id: 'BMB-136', tipo: 'Inundação',               bairro: 'Riacho Fundo II',    gravidade: 'Média',   lat: -15.8980, lng: -48.0250 },
-  { id: 'BMB-137', tipo: 'Incêndio Comercial',      bairro: 'Recanto das Emas',   gravidade: 'Alta',    lat: -15.9099, lng: -48.0596 },
-  { id: 'BMB-138', tipo: 'Acidente de Trânsito',    bairro: 'Candangolândia',     gravidade: 'Baixa',   lat: -15.8697, lng: -47.9587 },
-  { id: 'BMB-139', tipo: 'Vazamento de Gás',        bairro: 'Núcleo Bandeirante', gravidade: 'Média',   lat: -15.8738, lng: -47.9736 },
-  // Gama / Santa Maria
-  { id: 'BMB-140', tipo: 'Incêndio Estrutural',     bairro: 'Gama Leste',         gravidade: 'Crítica', lat: -16.0100, lng: -48.0500 },
-  { id: 'BMB-141', tipo: 'Incêndio Residencial',    bairro: 'Gama Sul',           gravidade: 'Alta',    lat: -16.0300, lng: -48.0700 },
-  { id: 'BMB-142', tipo: 'Desabamento',             bairro: 'Santa Maria Norte',  gravidade: 'Alta',    lat: -15.9950, lng: -47.9900 },
-  { id: 'BMB-143', tipo: 'Inundação',               bairro: 'Santa Maria Sul',    gravidade: 'Média',   lat: -16.0150, lng: -48.0050 },
-  { id: 'BMB-144', tipo: 'Acidente de Trânsito',    bairro: 'DF-290',             gravidade: 'Alta',    lat: -16.0400, lng: -48.0300 },
-  // São Sebastião / Paranoá / Itapoã / Jardim Botânico
-  { id: 'BMB-145', tipo: 'Incêndio Florestal',      bairro: 'São Sebastião',      gravidade: 'Crítica', lat: -15.9042, lng: -47.7888 },
-  { id: 'BMB-146', tipo: 'Resgate',                 bairro: 'Paranoá',            gravidade: 'Alta',    lat: -15.7721, lng: -47.7740 },
-  { id: 'BMB-147', tipo: 'Incêndio Residencial',    bairro: 'Itapoã',             gravidade: 'Média',   lat: -15.7428, lng: -47.7709 },
-  { id: 'BMB-148', tipo: 'Incêndio Florestal',      bairro: 'Jardim Botânico',    gravidade: 'Alta',    lat: -15.8765, lng: -47.8241 },
-  { id: 'BMB-149', tipo: 'Vazamento de Gás',        bairro: 'São Sebastião Sul',  gravidade: 'Alta',    lat: -15.9200, lng: -47.7700 },
-  { id: 'BMB-150', tipo: 'Acidente de Trânsito',    bairro: 'DF-463',             gravidade: 'Baixa',   lat: -15.8500, lng: -47.8100 },
-  // Sobradinho / Planaltina / Fercal
-  { id: 'BMB-151', tipo: 'Incêndio Comercial',      bairro: 'Sobradinho II',      gravidade: 'Alta',    lat: -15.6300, lng: -47.8000 },
-  { id: 'BMB-152', tipo: 'Incêndio Florestal',      bairro: 'Fercal',             gravidade: 'Crítica', lat: -15.5559, lng: -47.8783 },
-  { id: 'BMB-153', tipo: 'Resgate',                 bairro: 'Planaltina Norte',   gravidade: 'Média',   lat: -15.5900, lng: -47.6200 },
-  { id: 'BMB-154', tipo: 'Desabamento',             bairro: 'Arapoanga',          gravidade: 'Alta',    lat: -15.6050, lng: -47.7100 },
-  { id: 'BMB-155', tipo: 'Incêndio Florestal',      bairro: 'Vale do Amanhecer',  gravidade: 'Crítica', lat: -15.6400, lng: -47.6800 },
-  // Brazlândia / extremo norte
-  { id: 'BMB-156', tipo: 'Incêndio Florestal',      bairro: 'Brazlândia',         gravidade: 'Crítica', lat: -15.6735, lng: -48.1921 },
-  { id: 'BMB-157', tipo: 'Acidente de Trânsito',    bairro: 'DF-180',             gravidade: 'Alta',    lat: -15.7100, lng: -48.1500 },
-  { id: 'BMB-158', tipo: 'Incêndio Residencial',    bairro: 'Brazlândia Sul',     gravidade: 'Média',   lat: -15.6900, lng: -48.1700 },
-  // Rodovias / pontos dispersos
-  { id: 'BMB-159', tipo: 'Acidente de Trânsito',    bairro: 'BR-020 KM 14',       gravidade: 'Crítica', lat: -15.6500, lng: -47.9200 },
-  { id: 'BMB-160', tipo: 'Incêndio Florestal',      bairro: 'APA Cafuringa',      gravidade: 'Alta',    lat: -15.5200, lng: -48.0800 },
-];
+interface MapIncident {
+  id: string;
+  tipo: string;
+  bairro: string;
+  gravidade: string;
+  lat: number;
+  lng: number;
+}
+
+interface MapaPageProps {
+  incidents: ApiIncident[];
+}
 
 const layerOptions = ['Focos de Incêndio', 'Viaturas em Campo', 'Zonas de Risco', 'Hidrantes'] as const;
 
@@ -108,8 +56,22 @@ function FlyToLocation({ position }: { position: [number, number] | null }) {
   return null;
 }
 
-export function MapaPage() {
-  const [selected, setSelected] = useState<(typeof incidents)[0] | null>(null);
+export function MapaPage({ incidents: rawIncidents }: MapaPageProps) {
+  // Filter incidents that have lat/lng
+  const incidents = useMemo<MapIncident[]>(() => {
+    return rawIncidents
+      .filter((inc) => inc.latitude != null && inc.longitude != null)
+      .map((inc) => ({
+        id: inc.id,
+        tipo: inc.tipo,
+        bairro: inc.bairro,
+        gravidade: inc.gravidade,
+        lat: Number(inc.latitude),
+        lng: Number(inc.longitude),
+      }));
+  }, [rawIncidents]);
+
+  const [selected, setSelected] = useState<MapIncident | null>(null);
   const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null);
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({
     'Focos de Incêndio': true,
@@ -119,7 +81,7 @@ export function MapaPage() {
   });
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
 
-  const handleSidePanelClick = (inc: typeof incidents[0]) => {
+  const handleSidePanelClick = (inc: MapIncident) => {
     if (selected?.id === inc.id) {
       setSelected(null);
       setFlyTarget(null);
@@ -226,6 +188,9 @@ export function MapaPage() {
               <span className="bg-fire-red/20 text-fire-red px-2 py-0.5 rounded text-[9px] font-black">{incidents.length}</span>
             </h5>
             <div className="space-y-3 overflow-y-auto flex-1 pr-1">
+              {incidents.length === 0 && (
+                <p className="text-xs text-fire-muted text-center py-4">Nenhum incidente com coordenadas.</p>
+              )}
               {incidents.map((inc) => (
                 <button
                   key={inc.id}
