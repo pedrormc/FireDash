@@ -1,26 +1,31 @@
 # ADR-001: Migração de Mock Data para Banco de Dados Real
 
 ## Status
-Proposta
+Aceita — implementação em andamento
 
 ## Contexto
-O sistema atualmente usa dados mock em `src/data/mockData.ts` para todas as funcionalidades. Para uso em produção, precisamos de persistência real de dados.
+O sistema usava dados mock em `src/data/mockData.ts` para todas as funcionalidades. Para uso em produção, precisamos de persistência real de dados com autenticação.
 
 ## Dados Afetados
-- Alertas e notificações
-- KPIs (indicadores de desempenho)
-- Incidentes por tipo
-- Ocorrências de emergência
+- Alertas e notificações (derivados de incidents)
+- KPIs (indicadores de desempenho) — estáticos no banco
+- Tipos de ocorrência
+- Ocorrências de emergência (incidents)
+- Usuários e autenticação
 
 ## Decisão
-*A ser definida — escolha de banco de dados, ORM, e estratégia de API ainda em discussão.*
+- **Banco:** PostgreSQL hospedado em VPS própria
+- **API:** Node.js + Express (REST), deploy na Vercel como serverless
+- **Auth:** JWT com login/senha simples (sem hash na fase 1)
+- **Roles:** admin, operador, visualizador
+- **Alerts:** Derivados dos últimos incidents "Em Andamento" (sem tabela própria)
 
-## Opções em Consideração
-1. **SQLite (better-sqlite3)** — Já está como dependência no projeto. Simples, sem servidor externo.
-2. **PostgreSQL** — Mais robusto para produção, suporte a concorrência.
-3. **Supabase/Firebase** — BaaS com real-time, autenticação inclusa.
+## Estrutura do Banco
+4 tabelas: `users`, `incidents`, `kpis`, `tipos_ocorrencia`. Schema em `api/seed.sql`.
 
 ## Consequências
-- Necessidade de criar camada de API (REST ou tRPC)
-- Migração incremental: substituir um módulo de mock por vez
-- Manter mock data como fallback durante desenvolvimento
+- API REST completa criada em `api/` com CRUD para todos os recursos
+- Middlewares de JWT e roles controlam acesso
+- Frontend precisa de: services layer, auth context, login page, admin page
+- Migração incremental: mock data mantido como fallback durante transição
+- PRD com checklist de fases em `PRD.md`

@@ -288,18 +288,18 @@ INSERT INTO kpis (title, value, subtitle, icon, color, ordem) VALUES
 
 ## Fases de Implementação
 
-### Fase 1 — Backend + Banco ✅ ⬜
+### Fase 1 — Backend + Banco 🔧
 - [ ] Configurar banco PostgreSQL na VPS
-- [ ] Rodar SQL de setup (tabelas + seeds)
-- [ ] Criar projeto backend (Express + TypeScript)
-- [ ] Implementar conexão com banco (`db.ts`)
-- [ ] Implementar rotas de auth (login, me, logout)
-- [ ] Implementar middleware JWT
-- [ ] Implementar middleware de roles
-- [ ] Implementar CRUD incidents
-- [ ] Implementar CRUD KPIs
-- [ ] Implementar CRUD tipos
-- [ ] Implementar CRUD users (admin)
+- [ ] Rodar SQL de setup (tabelas + seeds) → arquivo `api/seed.sql` pronto
+- [x] Criar projeto backend (Express + TypeScript)
+- [x] Implementar conexão com banco (`api/db.ts`)
+- [x] Implementar rotas de auth (`api/routes/auth.ts`) — login, me, logout
+- [x] Implementar middleware JWT (`api/middleware/auth.ts`)
+- [x] Implementar middleware de roles (`api/middleware/roles.ts`)
+- [x] Implementar CRUD incidents (`api/routes/incidents.ts`)
+- [x] Implementar CRUD KPIs (`api/routes/kpis.ts`)
+- [x] Implementar CRUD tipos (`api/routes/tipos.ts`)
+- [x] Implementar CRUD users (`api/routes/users.ts`)
 - [ ] Testar todas as rotas (manual ou Postman)
 
 ### Fase 2 — Frontend: Auth + Contexto ⬜
