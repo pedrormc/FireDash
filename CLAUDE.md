@@ -48,6 +48,7 @@ Copiar `.env.example` para `.env.local` e definir:
 - Navegação via estado `Page` em `App.tsx`
 - Tailwind CSS v4 — usar tokens `fire-*` (nunca cores raw)
 - Dados em migração de mock (`src/data/mockData.ts`) para banco real
+- Backend carrega env de `.env.local` na raiz (path relativo ao CWD, não ao arquivo)
 
 ## Estrutura
 

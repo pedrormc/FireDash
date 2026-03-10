@@ -8,7 +8,7 @@ import kpiRoutes from './routes/kpis.js';
 import tipoRoutes from './routes/tipos.js';
 import userRoutes from './routes/users.js';
 
-dotenv.config({ path: '../.env.local' });
+dotenv.config({ path: '.env.local' });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
