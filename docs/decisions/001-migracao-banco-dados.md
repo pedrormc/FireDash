@@ -1,7 +1,7 @@
 # ADR-001: Migração de Mock Data para Banco de Dados Real
 
 ## Status
-Aceita — Fase 1 (Backend + Banco) concluída, Fase 2 (Frontend Auth) em planejamento
+Concluída — Todas as 5 fases implementadas e deploy em produção
 
 ## Contexto
 O sistema usava dados mock em `src/data/mockData.ts` para todas as funcionalidades. Para uso em produção, precisamos de persistência real de dados com autenticação.
@@ -26,13 +26,16 @@ O sistema usava dados mock em `src/data/mockData.ts` para todas as funcionalidad
 ## Consequências
 - API REST completa criada em `api/` com CRUD para todos os recursos
 - Middlewares de JWT e roles controlam acesso
-- Frontend precisa de: services layer, auth context, login page, admin page
-- Migração incremental: mock data mantido como fallback durante transição
+- Frontend usa services layer (`src/services/`) para comunicar com a API
+- AuthContext gerencia estado de autenticação global
+- LoginPage como tela de entrada, ProtectedRoute para controle por role
+- AdminPage com CRUD completo de usuários
+- Mock data mantido apenas como referência de interfaces TypeScript
 - PRD com checklist de fases em `PRD.md`
 
 ## Progresso
 - **Fase 1 (Backend):** Concluída — API funcional, banco PostgreSQL configurado na VPS, 40 testes manuais aprovados
-- **Fase 2 (Frontend Auth):** Próximo passo
-- **Fase 3 (Migração de Dados):** Pendente
-- **Fase 4 (Painel Admin):** Pendente
-- **Fase 5 (Deploy):** Pendente
+- **Fase 2 (Frontend Auth):** Concluída — LoginPage, AuthContext, ProtectedRoute, navegação por role
+- **Fase 3 (Migração de Dados):** Concluída — Todos os componentes consomem dados reais da API
+- **Fase 4 (Painel Admin):** Concluída — AdminPage com CRUD de usuários
+- **Fase 5 (Deploy):** Concluída — Frontend + backend na Vercel, produção em https://firedash-bombeiros.vercel.app

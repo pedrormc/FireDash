@@ -49,6 +49,54 @@ router.post('/login', async (req: AuthRequest, res: Response): Promise<void> => 
   }
 });
 
+// POST /api/auth/register
+router.post('/register', async (req: AuthRequest, res: Response): Promise<void> => {
+  const { nome, email, senha, cargo } = req.body;
+
+  if (!nome || !email || !senha) {
+    res.status(400).json({ error: 'Nome, email e senha são obrigatórios' });
+    return;
+  }
+
+  if (senha.length < 6) {
+    res.status(400).json({ error: 'A senha deve ter no mínimo 6 caracteres' });
+    return;
+  }
+
+  try {
+    // Check if email already exists
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) {
+      res.status(409).json({ error: 'Este email já está cadastrado' });
+      return;
+    }
+
+    const result = await pool.query(
+      `INSERT INTO users (nome, email, senha, cargo, role, ativo)
+       VALUES ($1, $2, $3, $4, 'visualizador', true)
+       RETURNING id, nome, email, cargo, role`,
+      [nome, email, senha, cargo || null]
+    );
+
+    const user = result.rows[0];
+    const token = generateToken({ id: user.id, email: user.email, role: user.role });
+
+    res.status(201).json({
+      token,
+      user: {
+        id: user.id,
+        nome: user.nome,
+        email: user.email,
+        cargo: user.cargo,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    console.error('Erro no registro:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // GET /api/auth/me
 router.get('/me', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {

@@ -49,3 +49,12 @@
 - Enviado via header `Authorization: Bearer <token>`
 - 3 roles: `admin`, `operador`, `visualizador`
 - Rotas da API validam role via middleware antes de executar
+- Frontend usa `AuthContext` (`src/contexts/AuthContext.tsx`) para estado global de auth
+- `ProtectedRoute` (`src/components/ProtectedRoute.tsx`) controla acesso por role
+- `apiFetch` (`src/services/api.ts`) injeta token e redireciona em 401
+
+## Dados
+- Dados reais vêm da API REST via services (`src/services/`)
+- `App.tsx` carrega incidents e KPIs no mount e passa via props
+- Alerts são derivados dos últimos 3 incidents "Em Andamento" (sem tabela própria)
+- Filtros no Dashboard são aplicados client-side sobre dados já carregados

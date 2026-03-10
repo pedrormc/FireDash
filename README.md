@@ -54,7 +54,7 @@ Sistema web para monitoramento e gestão de ocorrências do corpo de bombeiros, 
 ```
 src/                        # Frontend (React SPA)
 ├── components/             # Componentes compartilhados
-│   ├── Sidebar.tsx                # Navegação lateral
+│   ├── Sidebar.tsx                # Navegação lateral + logout
 │   ├── Topbar.tsx                 # Barra superior dinâmica
 │   ├── KpiCards.tsx               # Cards de indicadores
 │   ├── MapSection.tsx             # Mapa interativo
@@ -62,15 +62,25 @@ src/                        # Frontend (React SPA)
 │   ├── SystemStatus.tsx           # Status do sistema
 │   ├── IncidentTable.tsx          # Tabela de ocorrências
 │   ├── IncidentModal.tsx          # Detalhes de ocorrência
-│   ├── NovoAlertaModal.tsx        # Criar novo alerta
+│   ├── NovoAlertaModal.tsx        # Criar novo alerta (POST via API)
+│   ├── ProtectedRoute.tsx         # Wrapper de proteção por role
 │   └── ZoneStatus.tsx             # Status por zona
 ├── pages/                  # Páginas da aplicação
+│   ├── LoginPage.tsx              # Tela de login
+│   ├── AdminPage.tsx              # Painel admin (CRUD de usuários)
 │   ├── RelatoriosPage.tsx
 │   ├── MapaPage.tsx
 │   └── ConfiguracoesPage.tsx
-├── data/                   # Dados mock e tipos
-│   └── mockData.ts
-└── App.tsx                 # Dashboard + navegação central
+├── contexts/               # Estado global
+│   └── AuthContext.tsx            # Context de autenticação (user, token, login/logout)
+├── services/               # Comunicação com a API
+│   ├── api.ts                     # Fetch wrapper com JWT e baseURL
+│   ├── incidents.ts               # fetchIncidents, createIncident, deleteIncident
+│   ├── kpis.ts                    # fetchKpis
+│   └── users.ts                   # fetchUsers, createUser, updateUser, deactivateUser
+├── data/                   # Tipos TypeScript
+│   └── mockData.ts                # Interfaces (Incident, etc.) — dados reais vêm da API
+└── App.tsx                 # Dashboard + navegação central + carregamento de dados
 
 api/                        # Backend (Express API REST)
 ├── index.ts                # Entry point — Express app + rotas
@@ -259,22 +269,23 @@ O sistema usa JWT com 3 niveis de acesso:
 
 ## Arquitetura
 
-A aplicacao e uma **SPA (Single Page Application)** sem router library. A navegacao e controlada via estado `Page` no `App.tsx`, com o componente `Sidebar` disparando mudancas de pagina.
+A aplicacao e uma **SPA (Single Page Application)** sem router library. A navegacao e controlada via estado `Page` no `App.tsx`, com o componente `Sidebar` disparando mudancas de pagina. Dados sao carregados da API REST ao iniciar e passados via props.
 
 ```
-App.tsx (estado Page controla a navegação)
-├── LoginPage (auth)
-├── Dashboard (renderizado inline)
-│   ├── KpiCards
-│   ├── MapSection
-│   ├── ChartsSection
-│   ├── SystemStatus
-│   ├── IncidentTable
-│   └── ZoneStatus
-├── RelatoriosPage
-├── MapaPage
-├── ConfiguracoesPage
-└── AdminPage (CRUD de usuários, admin only)
+AuthProvider (contexto de autenticação global)
+└── AppShell (verifica token, exibe LoginPage ou AuthenticatedApp)
+    ├── LoginPage (formulário de login)
+    └── AuthenticatedApp (carrega dados da API)
+        ├── Sidebar (navegação + user info + logout)
+        ├── Dashboard (renderizado inline)
+        │   ├── KpiCards (dados da API)
+        │   ├── ChartsSection (dados da API)
+        │   ├── ZoneStatus
+        │   └── IncidentTable (com delete via API)
+        ├── RelatoriosPage (protegida por role)
+        ├── MapaPage (protegida por role)
+        ├── ConfiguracoesPage (protegida por role)
+        └── AdminPage (CRUD de usuários, admin only)
 ```
 
 ### Banco de Dados
@@ -291,10 +302,12 @@ App.tsx (estado Page controla a navegação)
 - [x] Autenticacao JWT com 3 roles
 - [x] CRUD completo (ocorrencias, KPIs, tipos, usuarios)
 - [x] Testes de todas as rotas da API (40 testes aprovados)
-- [ ] Integracao frontend com API (substituir mock data)
-- [ ] Tela de login e controle de acesso no frontend
-- [ ] Painel administrativo (CRUD de usuarios)
-- [ ] Deploy na Vercel (frontend + serverless functions)
+- [x] Tela de login e controle de acesso no frontend (Fase 2)
+- [x] Integracao frontend com API — dados reais do banco (Fase 3)
+- [x] Painel administrativo — CRUD de usuarios (Fase 4)
+- [x] Deploy na Vercel — frontend + serverless functions (Fase 5)
+
+**Producao:** [https://firedash-bombeiros.vercel.app](https://firedash-bombeiros.vercel.app)
 
 ---
 

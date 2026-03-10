@@ -1,27 +1,41 @@
 import React, { useState } from 'react';
-import { Flame, LogIn, Loader2 } from 'lucide-react';
+import { Flame, UserPlus, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-interface LoginPageProps {
-  onSwitchToRegister: () => void;
+interface RegisterPageProps {
+  onSwitchToLogin: () => void;
 }
 
-export function LoginPage({ onSwitchToRegister }: LoginPageProps) {
-  const { login } = useAuth();
+export function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
+  const { register } = useAuth();
+  const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [cargo, setCargo] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (senha.length < 6) {
+      setError('A senha deve ter no mínimo 6 caracteres');
+      return;
+    }
+
+    if (senha !== confirmarSenha) {
+      setError('As senhas não coincidem');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      await login(email, senha);
+      await register(nome, email, senha, cargo || undefined);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao fazer login');
+      setError(err instanceof Error ? err.message : 'Erro ao criar conta');
     } finally {
       setSubmitting(false);
     }
@@ -36,11 +50,26 @@ export function LoginPage({ onSwitchToRegister }: LoginPageProps) {
             <Flame className="h-8 w-8 text-white" />
           </div>
           <h1 className="font-black text-xl tracking-tight text-white">CORPO DE BOMBEIROS</h1>
-          <p className="text-fire-muted text-xs tracking-widest uppercase mt-1">Sistema de Monitoramento</p>
+          <p className="text-fire-muted text-xs tracking-widest uppercase mt-1">Criar Nova Conta</p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="bg-fire-card border border-white/5 rounded-2xl p-6 space-y-4">
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-fire-muted mb-2">
+              Nome Completo
+            </label>
+            <input
+              type="text"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+              autoFocus
+              placeholder="João da Silva"
+              className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-sm text-white placeholder-fire-muted/50 focus:outline-none focus:border-fire-red transition-colors"
+            />
+          </div>
+
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-fire-muted mb-2">
               Email
@@ -50,8 +79,20 @@ export function LoginPage({ onSwitchToRegister }: LoginPageProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              autoFocus
-              placeholder="admin@bombeiros.gov.br"
+              placeholder="seu.email@bombeiros.gov.br"
+              className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-sm text-white placeholder-fire-muted/50 focus:outline-none focus:border-fire-red transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-fire-muted mb-2">
+              Cargo <span className="text-fire-muted/50">(opcional)</span>
+            </label>
+            <input
+              type="text"
+              value={cargo}
+              onChange={(e) => setCargo(e.target.value)}
+              placeholder="Ex: Bombeiro Civil"
               className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-sm text-white placeholder-fire-muted/50 focus:outline-none focus:border-fire-red transition-colors"
             />
           </div>
@@ -65,7 +106,21 @@ export function LoginPage({ onSwitchToRegister }: LoginPageProps) {
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
               required
-              placeholder="********"
+              placeholder="Mínimo 6 caracteres"
+              className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-sm text-white placeholder-fire-muted/50 focus:outline-none focus:border-fire-red transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-fire-muted mb-2">
+              Confirmar Senha
+            </label>
+            <input
+              type="password"
+              value={confirmarSenha}
+              onChange={(e) => setConfirmarSenha(e.target.value)}
+              required
+              placeholder="Repita a senha"
               className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-sm text-white placeholder-fire-muted/50 focus:outline-none focus:border-fire-red transition-colors"
             />
           </div>
@@ -85,8 +140,8 @@ export function LoginPage({ onSwitchToRegister }: LoginPageProps) {
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <>
-                <LogIn className="h-5 w-5" />
-                <span>Entrar</span>
+                <UserPlus className="h-5 w-5" />
+                <span>Criar Conta</span>
               </>
             )}
           </button>
@@ -94,10 +149,10 @@ export function LoginPage({ onSwitchToRegister }: LoginPageProps) {
           <div className="text-center pt-2">
             <button
               type="button"
-              onClick={onSwitchToRegister}
+              onClick={onSwitchToLogin}
               className="text-xs text-fire-muted hover:text-white transition-colors"
             >
-              Não tem conta? <span className="text-fire-red font-bold">Cadastre-se</span>
+              Já tem uma conta? <span className="text-fire-red font-bold">Entrar</span>
             </button>
           </div>
         </form>

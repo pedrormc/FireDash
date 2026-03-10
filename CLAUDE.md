@@ -47,17 +47,20 @@ Copiar `.env.example` para `.env.local` e definir:
 - **Auth:** JWT + login/senha simples, 3 roles (admin, operador, visualizador)
 - Navegação via estado `Page` em `App.tsx`
 - Tailwind CSS v4 — usar tokens `fire-*` (nunca cores raw)
-- Dados em migração de mock (`src/data/mockData.ts`) para banco real
+- Dados vêm da API REST (PostgreSQL) via `src/services/` — mock data mantido apenas como referência de tipos
 - Backend carrega env de `.env.local` na raiz (path relativo ao CWD, não ao arquivo)
+- **Produção:** https://firedash-bombeiros.vercel.app
 
 ## Estrutura
 
 ```
 src/                    # Frontend (React SPA)
-├── components/         # Componentes compartilhados (Sidebar, Topbar, KpiCards, etc.)
-├── pages/              # Páginas (RelatoriosPage, MapaPage, ConfiguracoesPage)
-├── data/               # Mock data e tipos (será substituído por services/)
-├── App.tsx             # Dashboard + navegação
+├── components/         # Componentes compartilhados (Sidebar, Topbar, KpiCards, ProtectedRoute, etc.)
+├── pages/              # Páginas (LoginPage, AdminPage, RelatoriosPage, MapaPage, ConfiguracoesPage)
+├── contexts/           # Estado global (AuthContext)
+├── services/           # Comunicação com API (api.ts, incidents.ts, kpis.ts, users.ts)
+├── data/               # Interfaces TypeScript (Incident, etc.)
+├── App.tsx             # Orquestrador: auth, carregamento de dados, filtros, navegação
 
 api/                    # Backend (Express API)
 ├── index.ts            # Entry point — Express app + rotas

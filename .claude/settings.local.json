@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash test-api.sh 2>&1)",
+      "Bash(git add:*)"
+    ]
+  }
+}

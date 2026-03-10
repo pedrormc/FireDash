@@ -2,62 +2,34 @@
 
 ## Estado Atual
 
-**Fase 1 (Backend + Banco) — CONCLUÍDA**
+**Todas as 5 fases do PRD estão concluídas.** O sistema está em produção em [https://firedash-bombeiros.vercel.app](https://firedash-bombeiros.vercel.app).
 
-O backend Express com API REST está 100% funcional e conectado ao PostgreSQL na VPS (`3.237.66.68`). Todas as 40 rotas foram testadas com sucesso, incluindo auth, CRUD completo, filtros, validações e controle de acesso por role.
+### Fases Concluídas
 
-## Próximo: Fase 2 — Frontend Auth + Contexto
+- **Fase 1 (Backend + Banco):** API REST Express + PostgreSQL na VPS. 40 testes manuais aprovados.
+- **Fase 2 (Frontend Auth):** Login, AuthContext, ProtectedRoute, navegação por role.
+- **Fase 3 (Migração de Dados):** Todos os componentes consomem dados reais da API (incidents, KPIs, tipos).
+- **Fase 4 (Painel Admin):** AdminPage com CRUD completo de usuários.
+- **Fase 5 (Deploy):** Frontend + backend na Vercel (serverless functions).
 
-### 2.1 Criar `src/services/api.ts`
-- Fetch wrapper com `baseURL` da API (`VITE_API_URL`)
-- Interceptor para incluir token JWT no header `Authorization`
-- Tratamento de erro 401 (redirecionar para login)
+## Melhorias Futuras
 
-### 2.2 Criar `src/contexts/AuthContext.tsx`
-- Estado: `user`, `token`, `loading`
-- Métodos: `login()`, `logout()`, `checkAuth()`
-- Ao iniciar, verificar token no `localStorage` via `GET /api/auth/me`
-- Expor via `useAuth()` hook
+### Segurança
+- [ ] Hash de senhas com bcrypt (atualmente texto plano)
+- [ ] Migrar JWT de `localStorage` para httpOnly cookies
+- [ ] Rate limiting nas rotas de auth
 
-### 2.3 Criar `src/pages/LoginPage.tsx`
-- Formulário: email + senha
-- Chamar `POST /api/auth/login`
-- Salvar token no `localStorage`, user no context
-- Redirecionar para Dashboard após login
-- Usar tokens `fire-*` do Tailwind
+### Funcionalidades
+- [ ] Tela de cadastro (registro de novos usuários)
+- [ ] Edição de ocorrências (PUT via frontend)
+- [ ] Notificações em tempo real (WebSocket)
+- [ ] Exportação de relatórios em PDF
+- [ ] Filtros avançados no mapa (por tipo, gravidade, período)
 
-### 2.4 Criar `src/components/ProtectedRoute.tsx`
-- Wrapper que verifica `isAuthenticated` e `role`
-- Se não autenticado → redirecionar para login
-- Se role insuficiente → redirecionar para Dashboard
-
-### 2.5 Integrar auth no `App.tsx`
-- Adicionar `'login'` e `'admin'` ao type `Page`
-- Envolver app com `AuthProvider`
-- Verificar token ao iniciar (loading state)
-- Renderizar `LoginPage` se não autenticado
-
-### 2.6 Bloquear navegação por role
-- Sidebar: ocultar itens por role
-- Operador: sem acesso a `/admin`
-- Visualizador: apenas Dashboard
-
-## Fases Futuras
-
-### Fase 3 — Migração de Dados (Frontend)
-- Criar services para incidents, kpis, tipos
-- Substituir imports de `mockData.ts` por chamadas à API
-- Atualizar todos os componentes que consomem dados
-
-### Fase 4 — Painel Admin
-- `AdminPage.tsx` com CRUD de usuários
-- Tabela com ações (editar role, ativar/desativar)
-- Formulário de criação de usuário
-
-### Fase 5 — Deploy
-- Configurar `vercel.json` para serverless
-- Variáveis de ambiente na Vercel
-- Deploy e teste em produção
+### Qualidade
+- [ ] Testes automatizados (Vitest + Testing Library)
+- [ ] CI/CD pipeline
+- [ ] Monitoramento de erros (Sentry)
 
 ## Referência Rápida de Rotas
 

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { LayoutDashboard, FileText, Map, Settings } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 import { Sidebar } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
 import { KpiCards } from './components/KpiCards';
@@ -360,6 +361,7 @@ function AuthenticatedApp() {
 
 function AppShell() {
   const { user, loading } = useAuth();
+  const [authPage, setAuthPage] = useState<'login' | 'register'>('login');
 
   if (loading) {
     return (
@@ -370,7 +372,10 @@ function AppShell() {
   }
 
   if (!user) {
-    return <LoginPage />;
+    if (authPage === 'register') {
+      return <RegisterPage onSwitchToLogin={() => setAuthPage('login')} />;
+    }
+    return <LoginPage onSwitchToRegister={() => setAuthPage('register')} />;
   }
 
   return <AuthenticatedApp />;
