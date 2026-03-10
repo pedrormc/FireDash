@@ -1,0 +1,5 @@
+{
+  "name": "Dashboard de Incidências do Corpo de Bombeiros",
+  "description": "Um dashboard moderno e responsivo para análise de incidências do Corpo de Bombeiros, com tema de emergência, mapa em tempo real e gráficos.",
+  "requestFramePermissions": []
+}
