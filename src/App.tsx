@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { LayoutDashboard, FileText, Map, Settings } from 'lucide-react';
+import { LayoutDashboard, FileText, Map, Settings, Shield } from 'lucide-react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LoginPage } from './pages/LoginPage';
 import { Sidebar } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
 import { KpiCards } from './components/KpiCards';
@@ -10,10 +12,11 @@ import { NovoAlertaModal } from './components/NovoAlertaModal';
 import { RelatoriosPage } from './pages/RelatoriosPage';
 import { MapaPage } from './pages/MapaPage';
 import { ConfiguracoesPage } from './pages/ConfiguracoesPage';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { alerts, kpis, emergencyIncidents, TIPOS_OCORRENCIA } from './data/mockData';
 import type { Incident } from './data/mockData';
 
-type Page = 'dashboard' | 'relatorios' | 'mapa' | 'configuracoes';
+type Page = 'dashboard' | 'relatorios' | 'mapa' | 'configuracoes' | 'admin';
 type Periodo = 'hoje' | 'semana' | 'mes';
 
 const PAGE_TITLES: Record<Page, { title: string; subtitle: string }> = {
@@ -21,6 +24,14 @@ const PAGE_TITLES: Record<Page, { title: string; subtitle: string }> = {
   relatorios:    { title: 'Relatórios de Ocorrências', subtitle: 'Histórico e filtros de incidentes' },
   mapa:          { title: 'Vista do Mapa', subtitle: 'Monitoramento geográfico em tempo real' },
   configuracoes: { title: 'Configurações do Sistema', subtitle: 'Preferências e gerenciamento' },
+  admin:         { title: 'Painel Administrativo', subtitle: 'Gerenciamento de usuários e sistema' },
+};
+
+// Pages allowed per role
+const ROLE_PAGES: Record<string, Page[]> = {
+  admin:         ['dashboard', 'relatorios', 'mapa', 'configuracoes', 'admin'],
+  operador:      ['dashboard', 'relatorios', 'mapa', 'configuracoes'],
+  visualizador:  ['dashboard'],
 };
 
 // Boundaries for period filter (today = 2026-03-06)
@@ -28,7 +39,8 @@ const TODAY       = '2026-03-06';
 const WEEK_START  = '2026-02-27'; // 7 days ago
 const MONTH_START = '2026-02-04'; // 30 days ago
 
-export default function App() {
+function AuthenticatedApp() {
+  const { user, logout } = useAuth();
   const [currentPage, setCurrentPage]       = useState<Page>('dashboard');
   const [novoAlertaOpen, setNovoAlertaOpen] = useState(false);
 
@@ -74,12 +86,24 @@ export default function App() {
   const hasActiveFilters = filterTipo !== 'Todos' || filterGravidade !== 'Todas' || filterStatus !== 'Todos';
   const resetFilters = () => { setFilterTipo('Todos'); setFilterGravidade('Todas'); setFilterStatus('Todos'); };
 
+  // Navigation restricted by role
+  const handleNavigate = (page: Page) => {
+    const allowed = ROLE_PAGES[user?.role || 'visualizador'] || ROLE_PAGES.visualizador;
+    if (allowed.includes(page)) {
+      setCurrentPage(page);
+    }
+  };
+
   const navItems = [
     { page: 'dashboard'     as Page, icon: <LayoutDashboard className="h-5 w-5" />, label: 'Dashboard' },
     { page: 'relatorios'    as Page, icon: <FileText        className="h-5 w-5" />, label: 'Relatórios' },
     { page: 'mapa'          as Page, icon: <Map             className="h-5 w-5" />, label: 'Mapa' },
     { page: 'configuracoes' as Page, icon: <Settings        className="h-5 w-5" />, label: 'Config.' },
   ];
+
+  // Filter nav items by role
+  const allowedPages = ROLE_PAGES[user?.role || 'visualizador'] || ROLE_PAGES.visualizador;
+  const visibleNavItems = navItems.filter((item) => allowedPages.includes(item.page));
 
   return (
     <div className="bg-fire-dark text-white font-sans h-screen flex flex-col">
@@ -89,8 +113,10 @@ export default function App() {
           <Sidebar
             alerts={alerts}
             currentPage={currentPage}
-            onNavigate={setCurrentPage}
+            onNavigate={handleNavigate}
             onNovoAlerta={() => setNovoAlertaOpen(true)}
+            user={user}
+            onLogout={logout}
           />
         </div>
 
@@ -212,10 +238,30 @@ export default function App() {
               </div>
             )}
 
-            {currentPage === 'relatorios'    && <RelatoriosPage />}
-            {currentPage === 'mapa'          && <MapaPage />}
+            {currentPage === 'relatorios' && (
+              <ProtectedRoute allowedRoles={['admin', 'operador']}>
+                <RelatoriosPage />
+              </ProtectedRoute>
+            )}
+            {currentPage === 'mapa' && (
+              <ProtectedRoute allowedRoles={['admin', 'operador']}>
+                <MapaPage />
+              </ProtectedRoute>
+            )}
             {currentPage === 'configuracoes' && (
-              <ConfiguracoesPage isDarkMode={isDarkMode} onToggleDarkMode={toggleTheme} />
+              <ProtectedRoute allowedRoles={['admin', 'operador']}>
+                <ConfiguracoesPage isDarkMode={isDarkMode} onToggleDarkMode={toggleTheme} />
+              </ProtectedRoute>
+            )}
+            {currentPage === 'admin' && (
+              <ProtectedRoute allowedRoles={['admin']}>
+                <div className="p-4 md:p-8">
+                  <div className="bg-fire-card border border-white/5 rounded-2xl p-8 text-center">
+                    <Shield className="h-12 w-12 text-fire-muted mx-auto mb-4" />
+                    <p className="text-fire-muted text-sm">Painel Admin — será implementado na Fase 4</p>
+                  </div>
+                </div>
+              </ProtectedRoute>
             )}
           </div>
         </main>
@@ -223,10 +269,10 @@ export default function App() {
 
       {/* Mobile bottom tab bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-fire-sidebar border-t border-white/10 z-50 flex">
-        {navItems.map(({ page, icon, label }) => (
+        {visibleNavItems.map(({ page, icon, label }) => (
           <button
             key={page}
-            onClick={() => setCurrentPage(page)}
+            onClick={() => handleNavigate(page)}
             className={`flex-1 flex flex-col items-center py-3 space-y-1 transition-colors ${
               currentPage === page ? 'text-fire-red' : 'text-fire-muted'
             }`}
@@ -239,5 +285,31 @@ export default function App() {
 
       <NovoAlertaModal open={novoAlertaOpen} onClose={() => setNovoAlertaOpen(false)} />
     </div>
+  );
+}
+
+function AppShell() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-fire-dark flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-fire-red border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
+
+  return <AuthenticatedApp />;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppShell />
+    </AuthProvider>
   );
 }

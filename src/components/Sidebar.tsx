@@ -1,5 +1,6 @@
 import React from 'react';
-import { Flame, LayoutDashboard, FileText, Map, Settings, PlusCircle } from 'lucide-react';
+import { Flame, LayoutDashboard, FileText, Map, Settings, PlusCircle, Shield, LogOut } from 'lucide-react';
+import type { User } from '../contexts/AuthContext';
 
 interface Alert {
   id: string;
@@ -10,17 +11,30 @@ interface Alert {
   statusColor: string;
 }
 
-type Page = 'dashboard' | 'relatorios' | 'mapa' | 'configuracoes';
+type Page = 'dashboard' | 'relatorios' | 'mapa' | 'configuracoes' | 'admin';
 
 interface SidebarProps {
   alerts: Alert[];
   currentPage: Page;
   onNavigate: (page: Page) => void;
   onNovoAlerta: () => void;
+  user: User | null;
+  onLogout: () => void;
 }
 
-export function Sidebar({ alerts, currentPage, onNavigate, onNovoAlerta }: SidebarProps) {
+// Pages allowed per role
+const ROLE_PAGES: Record<string, Page[]> = {
+  admin:         ['dashboard', 'relatorios', 'mapa', 'configuracoes', 'admin'],
+  operador:      ['dashboard', 'relatorios', 'mapa', 'configuracoes'],
+  visualizador:  ['dashboard'],
+};
+
+export function Sidebar({ alerts, currentPage, onNavigate, onNovoAlerta, user, onLogout }: SidebarProps) {
+  const allowedPages = ROLE_PAGES[user?.role || 'visualizador'] || ROLE_PAGES.visualizador;
+
   const navItem = (page: Page, icon: React.ReactNode, label: string, extraClass = '') => {
+    if (!allowedPages.includes(page)) return null;
+
     const active = currentPage === page;
     return (
       <button
@@ -36,6 +50,9 @@ export function Sidebar({ alerts, currentPage, onNavigate, onNovoAlerta }: Sideb
       </button>
     );
   };
+
+  // Can create incidents: admin and operador
+  const canCreate = user?.role === 'admin' || user?.role === 'operador';
 
   return (
     <aside className="w-72 bg-fire-sidebar flex flex-col border-r border-white/5 h-full">
@@ -54,6 +71,7 @@ export function Sidebar({ alerts, currentPage, onNavigate, onNovoAlerta }: Sideb
         {navItem('relatorios', <FileText className="h-5 w-5" />, 'Relatórios')}
         {navItem('mapa', <Map className="h-5 w-5" />, 'Vista do Mapa')}
         {navItem('configuracoes', <Settings className="h-5 w-5" />, 'Configurações', 'mt-4')}
+        {navItem('admin', <Shield className="h-5 w-5" />, 'Admin', 'mt-1')}
 
         <div className="mt-8">
           <h3 className="px-3 text-[10px] font-bold text-fire-muted uppercase tracking-widest mb-4">Alertas Recentes</h3>
@@ -74,14 +92,32 @@ export function Sidebar({ alerts, currentPage, onNavigate, onNovoAlerta }: Sideb
         </div>
       </nav>
 
-      <div className="p-4 border-t border-white/5">
-        <button
-          onClick={onNovoAlerta}
-          className="w-full bg-fire-red hover:bg-red-700 text-white font-bold py-3 rounded-xl flex items-center justify-center space-x-2 transition-colors shadow-lg shadow-fire-red/20"
-        >
-          <PlusCircle className="h-5 w-5" />
-          <span>Emitir Novo Alerta</span>
-        </button>
+      {/* Bottom section: user info + actions */}
+      <div className="p-4 border-t border-white/5 space-y-3">
+        {canCreate && (
+          <button
+            onClick={onNovoAlerta}
+            className="w-full bg-fire-red hover:bg-red-700 text-white font-bold py-3 rounded-xl flex items-center justify-center space-x-2 transition-colors shadow-lg shadow-fire-red/20"
+          >
+            <PlusCircle className="h-5 w-5" />
+            <span>Emitir Novo Alerta</span>
+          </button>
+        )}
+
+        {/* User info + logout */}
+        <div className="flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-white truncate">{user?.nome}</p>
+            <p className="text-[10px] text-fire-muted truncate">{user?.role}</p>
+          </div>
+          <button
+            onClick={onLogout}
+            title="Sair"
+            className="p-2 text-fire-muted hover:text-fire-red transition-colors rounded-lg hover:bg-white/5"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </aside>
   );

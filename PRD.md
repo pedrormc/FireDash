@@ -302,14 +302,14 @@ INSERT INTO kpis (title, value, subtitle, icon, color, ordem) VALUES
 - [x] Implementar CRUD users (`api/routes/users.ts`)
 - [x] Testar todas as rotas (manual ou Postman)
 
-### Fase 2 — Frontend: Auth + Contexto ⬜
-- [ ] Criar `services/api.ts` (fetch wrapper com token)
-- [ ] Criar `contexts/AuthContext.tsx`
-- [ ] Criar `LoginPage.tsx`
-- [ ] Criar `ProtectedRoute.tsx`
-- [ ] Integrar auth no `App.tsx` (verificar token ao iniciar)
-- [ ] Adicionar `'login'` e `'admin'` ao type `Page`
-- [ ] Bloquear navegação por role
+### Fase 2 — Frontend: Auth + Contexto ✅
+- [x] Criar `services/api.ts` (fetch wrapper com token)
+- [x] Criar `contexts/AuthContext.tsx`
+- [x] Criar `LoginPage.tsx`
+- [x] Criar `ProtectedRoute.tsx`
+- [x] Integrar auth no `App.tsx` (verificar token ao iniciar)
+- [x] Adicionar `'admin'` ao type `Page`
+- [x] Bloquear navegação por role
 
 ### Fase 3 — Frontend: Migração de Dados ⬜
 - [ ] Criar `services/incidents.ts` — substituir imports de mockData
