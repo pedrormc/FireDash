@@ -1,6 +1,7 @@
 import pg from 'pg';
 import dotenv from 'dotenv';
 
+// Em produção (Vercel), env vars são injetadas pelo runtime
 dotenv.config({ path: '.env.local' });
 
 const pool = new pg.Pool({

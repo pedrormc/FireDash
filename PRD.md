@@ -311,30 +311,30 @@ INSERT INTO kpis (title, value, subtitle, icon, color, ordem) VALUES
 - [x] Adicionar `'admin'` ao type `Page`
 - [x] Bloquear navegação por role
 
-### Fase 3 — Frontend: Migração de Dados ⬜
-- [ ] Criar `services/incidents.ts` — substituir imports de mockData
-- [ ] Criar `services/kpis.ts`
-- [ ] Atualizar `App.tsx` — fetch incidents da API
-- [ ] Atualizar `KpiCards.tsx` — fetch KPIs da API
-- [ ] Atualizar `RelatoriosPage.tsx` — fetch da API
-- [ ] Atualizar `MapaPage.tsx` — fetch da API (com lat/lng)
-- [ ] Atualizar `NovoAlertaModal.tsx` — POST para API
-- [ ] Atualizar `IncidentModal.tsx` — DELETE via API
-- [ ] Atualizar `ConfiguracoesPage.tsx` — salvar no banco
+### Fase 3 — Frontend: Migração de Dados ✅
+- [x] Criar `services/incidents.ts` — substituir imports de mockData
+- [x] Criar `services/kpis.ts`
+- [x] Atualizar `App.tsx` — fetch incidents e kpis da API
+- [x] Atualizar `KpiCards.tsx` — recebe kpis via props (da API)
+- [x] Atualizar `RelatoriosPage.tsx` — recebe incidents via props (da API)
+- [x] Atualizar `MapaPage.tsx` — recebe incidents da API (filtra por lat/lng)
+- [x] Atualizar `NovoAlertaModal.tsx` — POST para API + tipos dinâmicos
+- [x] Atualizar `IncidentModal.tsx` — DELETE via API (callback do App)
+- [x] Atualizar `ConfiguracoesPage.tsx` — dados reais do user logado
 
-### Fase 4 — Painel Admin ⬜
-- [ ] Criar `AdminPage.tsx` — CRUD de usuários
-- [ ] Tabela de usuários com ações (editar role, ativar/desativar)
-- [ ] Formulário de criação de usuário
-- [ ] Integrar no Sidebar (visível só para admin)
+### Fase 4 — Painel Admin ✅
+- [x] Criar `AdminPage.tsx` — CRUD de usuários
+- [x] Tabela de usuários com ações (editar role, ativar/desativar)
+- [x] Formulário de criação de usuário
+- [x] Integrar no Sidebar (visível só para admin — feito na Fase 2)
 
-### Fase 5 — Deploy ⬜
-- [ ] Configurar `vercel.json` para serverless functions
-- [ ] Configurar variáveis de ambiente na Vercel (DATABASE_URL, JWT_SECRET)
-- [ ] Deploy do backend na Vercel
-- [ ] Deploy do frontend na Vercel
-- [ ] Testar fluxo completo em produção
-- [ ] Seed de dados iniciais no banco de produção
+### Fase 5 — Deploy ✅
+- [x] Configurar `vercel.json` para serverless functions
+- [x] Configurar variáveis de ambiente na Vercel (DATABASE_URL, JWT_SECRET, DB_SSL, CORS_ORIGIN)
+- [x] Deploy do backend na Vercel (serverless function Express)
+- [x] Deploy do frontend na Vercel (SPA estática)
+- [x] Testar fluxo completo em produção
+- [x] Seed de dados iniciais no banco de produção (feito na Fase 1)
 
 ---
 
