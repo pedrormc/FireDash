@@ -15,7 +15,7 @@ interface AuthState {
   user: User | null;
   loading: boolean;
   login: (email: string, senha: string) => Promise<void>;
-  register: (nome: string, email: string, senha: string, cargo?: string) => Promise<void>;
+  register: (nome: string, email: string, senha: string, cargo?: string, role?: Role) => Promise<void>;
   logout: () => void;
 }
 
@@ -56,10 +56,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user);
   }, []);
 
-  const register = useCallback(async (nome: string, email: string, senha: string, cargo?: string) => {
+  const register = useCallback(async (nome: string, email: string, senha: string, cargo?: string, role?: Role) => {
     const data = await apiFetch<{ token: string; user: User }>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ nome, email, senha, cargo }),
+      body: JSON.stringify({ nome, email, senha, cargo, role }),
     });
 
     localStorage.setItem('token', data.token);

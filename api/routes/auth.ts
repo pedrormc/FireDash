@@ -51,7 +51,7 @@ router.post('/login', async (req: AuthRequest, res: Response): Promise<void> => 
 
 // POST /api/auth/register
 router.post('/register', async (req: AuthRequest, res: Response): Promise<void> => {
-  const { nome, email, senha, cargo } = req.body;
+  const { nome, email, senha, cargo, role } = req.body;
 
   if (!nome || !email || !senha) {
     res.status(400).json({ error: 'Nome, email e senha são obrigatórios' });
@@ -63,6 +63,8 @@ router.post('/register', async (req: AuthRequest, res: Response): Promise<void> 
     return;
   }
 
+  const userRole = role && ['admin', 'operador', 'visualizador'].includes(role) ? role : 'visualizador';
+
   try {
     // Check if email already exists
     const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
@@ -73,9 +75,9 @@ router.post('/register', async (req: AuthRequest, res: Response): Promise<void> 
 
     const result = await pool.query(
       `INSERT INTO users (nome, email, senha, cargo, role, ativo)
-       VALUES ($1, $2, $3, $4, 'visualizador', true)
+       VALUES ($1, $2, $3, $4, $5, true)
        RETURNING id, nome, email, cargo, role`,
-      [nome, email, senha, cargo || null]
+      [nome, email, senha, cargo || null, userRole]
     );
 
     const user = result.rows[0];

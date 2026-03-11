@@ -13,12 +13,33 @@ export function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [cargo, setCargo] = useState('');
+  const [role, setRole] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!nome.trim()) {
+      setError('O nome completo é obrigatório');
+      return;
+    }
+
+    if (!email.trim() || !email.includes('@')) {
+      setError('Por favor, insira um e-mail válido');
+      return;
+    }
+
+    if (!role) {
+      setError('O perfil de acesso (Role) é obrigatório');
+      return;
+    }
+
+    if (!senha) {
+      setError('A senha é obrigatória');
+      return;
+    }
 
     if (senha.length < 6) {
       setError('A senha deve ter no mínimo 6 caracteres');
@@ -33,7 +54,7 @@ export function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
     setSubmitting(true);
 
     try {
-      await register(nome, email, senha, cargo || undefined);
+      await register(nome, email, senha, cargo || undefined, role as 'admin' | 'operador' | 'visualizador');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar conta');
     } finally {
@@ -63,7 +84,6 @@ export function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
               type="text"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
-              required
               autoFocus
               placeholder="João da Silva"
               className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-sm text-white placeholder-fire-muted/50 focus:outline-none focus:border-fire-red transition-colors"
@@ -78,7 +98,6 @@ export function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
               placeholder="seu.email@bombeiros.gov.br"
               className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-sm text-white placeholder-fire-muted/50 focus:outline-none focus:border-fire-red transition-colors"
             />
@@ -86,15 +105,31 @@ export function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
 
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-fire-muted mb-2">
-              Cargo <span className="text-fire-muted/50">(opcional)</span>
+              Cargo na Corporação <span className="text-fire-muted/50">(opcional)</span>
             </label>
             <input
               type="text"
               value={cargo}
               onChange={(e) => setCargo(e.target.value)}
-              placeholder="Ex: Bombeiro Civil"
+              placeholder="Ex: Bombeiro Civil, Tenente"
               className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-sm text-white placeholder-fire-muted/50 focus:outline-none focus:border-fire-red transition-colors"
             />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-fire-muted mb-2">
+              Perfil de Acesso no Sistema
+            </label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-fire-red transition-colors appearance-none"
+            >
+              <option value="" disabled className="text-gray-500 bg-fire-dark">Selecione um perfil</option>
+              <option value="admin" className="bg-fire-dark">Administrador Geral</option>
+              <option value="operador" className="bg-fire-dark">Operador de Despacho</option>
+              <option value="visualizador" className="bg-fire-dark">Visualizador (Somente Leitura)</option>
+            </select>
           </div>
 
           <div>
@@ -105,7 +140,6 @@ export function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
               type="password"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
-              required
               placeholder="Mínimo 6 caracteres"
               className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-sm text-white placeholder-fire-muted/50 focus:outline-none focus:border-fire-red transition-colors"
             />
@@ -119,7 +153,6 @@ export function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
               type="password"
               value={confirmarSenha}
               onChange={(e) => setConfirmarSenha(e.target.value)}
-              required
               placeholder="Repita a senha"
               className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-sm text-white placeholder-fire-muted/50 focus:outline-none focus:border-fire-red transition-colors"
             />

@@ -16,6 +16,17 @@ export function LoginPage({ onSwitchToRegister }: LoginPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!email.trim()) {
+      setError('O e-mail é obrigatório para acessar o painel');
+      return;
+    }
+
+    if (!senha) {
+      setError('A senha é obrigatória');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -49,7 +60,6 @@ export function LoginPage({ onSwitchToRegister }: LoginPageProps) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
               autoFocus
               placeholder="admin@bombeiros.gov.br"
               className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-sm text-white placeholder-fire-muted/50 focus:outline-none focus:border-fire-red transition-colors"
@@ -64,7 +74,6 @@ export function LoginPage({ onSwitchToRegister }: LoginPageProps) {
               type="password"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
-              required
               placeholder="********"
               className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-sm text-white placeholder-fire-muted/50 focus:outline-none focus:border-fire-red transition-colors"
             />

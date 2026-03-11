@@ -1,0 +1,20 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3000",
+  "loginUser": "admin123",
+  "loginPassword": "admin123",
+  "executionArgs": {
+    "projectName": "Bombeiros",
+    "projectPath": "c:\\Users\\teste\\Desktop\\AAsites-antigra\\Bombeiros",
+    "testIds": [],
+    "additionalInstruction": "",
+    "serverMode": "development",
+    "envs": {
+      "API_KEY": "sk-user-vuIqlJJh5-XFr_aKZf6ljvdbwHFWMj216YFwEbB-8lRoTh75ORmFswYkGKncNlf5b_SkFhNoQxHqdGvX2ZViDXG2LbM40zvo-zICQ2y4Z1oTcQWqXpyp1uL6UyKhIJ5tCPg"
+    }
+  },
+  "serverPort": 61701,
+  "proxy": "http://22b158ad-45fb-440e-99fa-083d457e9a49:cj9yKjuCcfwL8iymlFDmMSd5HrJfunah@tun.testsprite.com:8080"
+}

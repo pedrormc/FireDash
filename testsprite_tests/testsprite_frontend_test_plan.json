@@ -1,0 +1,588 @@
+[
+  {
+    "id": "TC001",
+    "title": "Successful registration redirects to Login with success message",
+    "description": "Verifies a new user can register with valid details, sees a success message, and is redirected to the Login page.",
+    "category": "User Registration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Register\" link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Create\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Test User\" into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"newuser_20260311_001@bombeiros.gov.br\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Bombeiro Civil\" into the cargo field"
+      },
+      {
+        "type": "action",
+        "description": "Select \"operator\" from the role dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ValidPass123!\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ValidPass123!\" into the confirm password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Register\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"success\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Login\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Required field validation when submitting empty registration form",
+    "description": "Verifies the user cannot submit the registration form with missing required fields and stays on the Register form.",
+    "category": "User Registration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Register\" link"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Register\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Name\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Email\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Password\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Email format validation blocks registration",
+    "description": "Verifies the form prevents registration when the email format is invalid.",
+    "category": "User Registration",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Register\" link"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Invalid Email User\" into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"not-an-email\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ValidPass123!\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Select \"visualizador\" from the role dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Register\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"invalid\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Password too short/weak shows validation error",
+    "description": "Verifies the form shows an error when the password does not meet minimum requirements and does not proceed to Login.",
+    "category": "User Registration",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Register\" link"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Weak Password User\" into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"newuser_20260311_weak@example.com\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"123\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Select \"operator\" from the role dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Register\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Password\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"must\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Role must be selected before registration",
+    "description": "Verifies the user cannot register without selecting a role and receives a visible validation message.",
+    "category": "User Registration",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Register\" link"
+      },
+      {
+        "type": "action",
+        "description": "Type \"No Role User\" into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"newuser_20260311_norole@example.com\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ValidPass123!\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Register\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Role\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"required\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Registration trims leading/trailing spaces in email",
+    "description": "Verifies registration succeeds (or fails with a clear error) when the email contains leading/trailing spaces, indicating input normalization.",
+    "category": "User Registration",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Register\" link"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Space Email User\" into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"  newuser_20260311_spaces@example.com  \" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ValidPass123!\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Select \"operator\" from the role dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Register\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"success\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "After successful registration, user can navigate to Login and see login form",
+    "description": "Verifies that the post-registration redirect lands on a usable Login page with visible login fields.",
+    "category": "User Registration",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Register\" link"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Redirect Check User\" into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"newuser_20260311_redirect@example.com\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ValidPass123!\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Select \"visualizador\" from the role dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Register\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Login\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Admin/Operador can view dashboard KPIs, filter incidents, and delete an incident successfully",
+    "description": "Verifies that a permitted user can see KPI/charts, apply filters to update the incident table, and delete an incident with confirmation and success feedback.",
+    "category": "Dashboard & Incidents",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"admin@bombeiros.gov.br\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"admin123\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"KPI cards\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Select an option from the \"Periodo\" filter dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Incident table\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Filtering updates incident table results for an authenticated user",
+    "description": "Verifies that changing multiple filters updates the incident table contents accordingly.",
+    "category": "Dashboard & Incidents",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"admin@bombeiros.gov.br\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"admin123\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Select an option from the \"Tipo\" filter dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Select an option from the \"Gravidade\" filter dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Incident table\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Applying filters shows a visible loading indicator while incidents refresh",
+    "description": "Verifies that the UI shows a loading indicator when filters are changed and incidents are reloaded.",
+    "category": "Dashboard & Incidents",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"admin@bombeiros.gov.br\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"admin123\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Select an option from the \"Status\" filter dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Loading\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Incident table\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Admin/Operador deletes an incident after confirming in the confirmation dialog",
+    "description": "Verifies the end-to-end delete flow: open confirmation, confirm deletion, and see success notification and removed row.",
+    "category": "Dashboard & Incidents",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"admin@bombeiros.gov.br\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"admin123\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Incident table\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Delete\" button on the first incident row"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Confirm deletion\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Confirm\" button"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "After successful deletion, incident is removed and a success notification is shown",
+    "description": "Verifies the post-delete UI state: success feedback is visible and the deleted incident no longer appears in the table.",
+    "category": "Dashboard & Incidents",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"admin@bombeiros.gov.br\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"admin123\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Incident table\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Delete\" button on the first incident row"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Confirm\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Incident deleted\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Visualizador (read-only) cannot delete an incident and sees insufficient permissions error",
+    "description": "Verifies that a read-only user attempting to delete gets an 'Insufficient permissions' message and the incident remains visible.",
+    "category": "Dashboard & Incidents",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"admin@bombeiros.gov.br\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"admin123\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Incident table\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Delete\" button on the first incident row"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Insufficient permissions\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Incident table\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Canceling the delete confirmation keeps the incident in the table",
+    "description": "Verifies that dismissing/canceling the delete confirmation does not remove the incident and no success message appears.",
+    "category": "Dashboard & Incidents",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"admin@bombeiros.gov.br\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"admin123\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Incident table\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Delete\" button on the first incident row"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Confirm deletion\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Cancel\" button"
+      }
+    ]
+  }
+]

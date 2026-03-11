@@ -1,0 +1,65 @@
+version: "2"
+type: frontend
+tech_stack:
+  - react
+  - vite
+  - tailwindcss
+  - lucide-react
+routes:
+  - path: /
+    file: src/App.tsx
+    auth_required: true
+    description: Main SPA entry point (conditionally renders Login, Register, or Dashboard)
+features:
+  - name: User Login
+    description: Login with email and password credentials
+    files:
+      - src/pages/LoginPage.tsx
+      - src/contexts/AuthContext.tsx
+    entry_route: /
+    user_interactions:
+      - Fill email input field
+      - Fill password input field
+      - Click Login button to submit
+    api_calls:
+      - method: POST
+        endpoint: /api/auth/login
+    auth_required: false
+  - name: User Registration
+    description: Register a new user account
+    files:
+      - src/pages/RegisterPage.tsx
+    entry_route: /
+    user_interactions:
+      - Fill name field
+      - Fill email field
+      - Fill cargo field (optional text input)
+      - Select role from dropdown (required, values: admin, operador, visualizador)
+      - Fill password field
+      - Fill password confirm field
+      - Click Register
+    api_calls:
+      - method: POST
+        endpoint: /api/auth/register
+    auth_required: false
+  - name: Dashboard & Incidents
+    description: View KPI cards, charts, and filter incident data
+    files:
+      - src/App.tsx
+      - src/components/KpiCards.tsx
+      - src/components/ChartsSection.tsx
+      - src/components/IncidentTable.tsx
+    entry_route: /
+    user_interactions:
+      - View overview stats
+      - Change filters (Periodo, Tipo, Gravidade, Status)
+      - Delete an incident
+    api_calls:
+      - method: GET
+        endpoint: /api/kpis
+      - method: GET
+        endpoint: /api/incidents
+      - method: DELETE
+        endpoint: /api/incidents/:id
+    auth_required: true
+known_limitations: []
