@@ -16,10 +16,10 @@ router.get(
       const result = await pool.query(
         'SELECT id, nome, email, cargo, role, ativo, created_at FROM users ORDER BY created_at DESC'
       );
-      res.json(result.rows);
+      res.json({ success: true, data: result.rows });
     } catch (err) {
       console.error('Erro ao listar usuários:', err);
-      res.status(500).json({ error: 'Erro interno do servidor' });
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
     }
   }
 );
@@ -33,13 +33,13 @@ router.post(
     const { nome, email, senha, cargo, role } = req.body;
 
     if (!nome || !email || !senha) {
-      res.status(400).json({ error: 'Nome, email e senha são obrigatórios' });
+      res.status(400).json({ success: false, error: 'Nome, email e senha são obrigatórios' });
       return;
     }
 
     const validRoles = ['admin', 'operador', 'visualizador'];
     if (role && !validRoles.includes(role)) {
-      res.status(400).json({ error: `Role inválida. Use: ${validRoles.join(', ')}` });
+      res.status(400).json({ success: false, error: `Role inválida. Use: ${validRoles.join(', ')}` });
       return;
     }
 
@@ -53,14 +53,14 @@ router.post(
         [nome, email, hash, cargo || null, role || 'visualizador']
       );
 
-      res.status(201).json(result.rows[0]);
+      res.status(201).json({ success: true, data: result.rows[0] });
     } catch (err: unknown) {
       if (err instanceof Error && 'code' in err && (err as Record<string, unknown>).code === '23505') {
-        res.status(409).json({ error: 'Este email já está cadastrado' });
+        res.status(409).json({ success: false, error: 'Este email já está cadastrado' });
         return;
       }
       console.error('Erro ao criar usuário:', err);
-      res.status(500).json({ error: 'Erro interno do servidor' });
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
     }
   }
 );
@@ -75,7 +75,7 @@ router.put(
 
     const validRoles = ['admin', 'operador', 'visualizador'];
     if (role && !validRoles.includes(role)) {
-      res.status(400).json({ error: `Role inválida. Use: ${validRoles.join(', ')}` });
+      res.status(400).json({ success: false, error: `Role inválida. Use: ${validRoles.join(', ')}` });
       return;
     }
 
@@ -96,18 +96,18 @@ router.put(
       );
 
       if (result.rows.length === 0) {
-        res.status(404).json({ error: 'Usuário não encontrado' });
+        res.status(404).json({ success: false, error: 'Usuário não encontrado' });
         return;
       }
 
-      res.json(result.rows[0]);
+      res.json({ success: true, data: result.rows[0] });
     } catch (err: unknown) {
       if (err instanceof Error && 'code' in err && (err as Record<string, unknown>).code === '23505') {
-        res.status(409).json({ error: 'Este email já está cadastrado' });
+        res.status(409).json({ success: false, error: 'Este email já está cadastrado' });
         return;
       }
       console.error('Erro ao atualizar usuário:', err);
-      res.status(500).json({ error: 'Erro interno do servidor' });
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
     }
   }
 );
@@ -122,7 +122,7 @@ router.delete(
 
     // Impedir auto-exclusão
     if (req.user!.id === userId) {
-      res.status(400).json({ error: 'Você não pode desativar sua própria conta' });
+      res.status(400).json({ success: false, error: 'Você não pode desativar sua própria conta' });
       return;
     }
 
@@ -133,14 +133,14 @@ router.delete(
       );
 
       if (result.rows.length === 0) {
-        res.status(404).json({ error: 'Usuário não encontrado' });
+        res.status(404).json({ success: false, error: 'Usuário não encontrado' });
         return;
       }
 
-      res.json({ ok: true, desativado: result.rows[0] });
+      res.json({ success: true, data: { desativado: result.rows[0] } });
     } catch (err) {
       console.error('Erro ao desativar usuário:', err);
-      res.status(500).json({ error: 'Erro interno do servidor' });
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
     }
   }
 );

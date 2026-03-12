@@ -1,8 +1,124 @@
 {
   "permissions": {
     "allow": [
+      "Bash(echo \"$HOME\")",
+      "Bash(npm run lint)",
+      "WebFetch(domain:marketplace.visualstudio.com)",
+      "Bash(cd \"C:\\\\Users\\\\teste\\\\Desktop\\\\AAsites-antigra\\\\Bombeiros\" && npx tsc --noEmit 2>&1 | head -50)"
+    ],
+    "allowlist": [
       "Bash(bash test-api.sh 2>&1)",
-      "Bash(git add:*)"
-    ]
+      "Bash(git add:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run build)",
+      "Bash(npm run test:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run api:dev:*)",
+      "Bash(npx tsc --noEmit:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx playwright:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:registry.npmjs.org)",
+      "WebFetch(domain:firedash-bombeiros.vercel.app)",
+      "npm",
+      "git",
+      "ls",
+      "grep",
+      "find",
+      "pwd",
+      "mkdir",
+      "touch",
+      "wc",
+      "sort",
+      "uniq",
+      "curl"
+    ],
+    "blockList": [
+      "rm -rf /",
+      "rm -rf ~",
+      "rm -rf .",
+      "rm -f",
+      "sudo",
+      "chmod 777",
+      "chmod -R 777",
+      "mv /",
+      "cp -r /",
+      "> /dev/sda",
+      "dd if=",
+      "mkfs",
+      "format",
+      "DROP DATABASE",
+      "DROP TABLE",
+      "TRUNCATE"
+    ],
+    "requireConfirmation": [
+      "npm install",
+      "npm ci",
+      "npm uninstall",
+      "git push",
+      "git push --force",
+      "git rebase",
+      "git reset --hard",
+      "git branch -D",
+      "npm publish",
+      "docker",
+      "kubectl",
+      "vercel",
+      "rm -rf node_modules",
+      "rm -rf dist"
+    ],
+    "filesystem": {
+      "readOnly": [
+        ".env",
+        ".env.*",
+        "*.pem",
+        "*.key",
+        "credentials.json",
+        "secrets/*",
+        "config/production.json"
+      ],
+      "noDelete": [
+        "package.json",
+        "package-lock.json",
+        "tsconfig.json",
+        "api/tsconfig.json",
+        "vercel.json",
+        ".git",
+        ".gitignore",
+        ".env.example",
+        "README.md",
+        "CLAUDE.md",
+        "PRD.md",
+        "api/seed.sql",
+        "api/db.ts"
+      ],
+      "requireConfirmation": [
+        "node_modules",
+        "dist",
+        "build",
+        "api/migrations/*"
+      ]
+    },
+    "network": {
+      "requireConfirmation": [
+        "*.amazonaws.com",
+        "3.237.66.68"
+      ],
+      "blockList": [
+        "http://localhost:*/admin/delete",
+        "*/drop-database",
+        "*/drop-table"
+      ]
+    }
+  },
+  "safetyLevel": "balanced",
+  "notifications": {
+    "blockedAction": true,
+    "requiresConfirmation": true
   }
 }

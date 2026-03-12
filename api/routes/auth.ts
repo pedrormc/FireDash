@@ -11,7 +11,7 @@ router.post('/login', async (req: AuthRequest, res: Response): Promise<void> => 
   const { email, senha } = req.body;
 
   if (!email || !senha) {
-    res.status(400).json({ error: 'Email e senha são obrigatórios' });
+    res.status(400).json({ success: false, error: 'Email e senha são obrigatórios' });
     return;
   }
 
@@ -24,25 +24,28 @@ router.post('/login', async (req: AuthRequest, res: Response): Promise<void> => 
     const user = result.rows[0];
 
     if (!user || !user.ativo || !(await bcrypt.compare(senha, user.senha))) {
-      res.status(401).json({ error: 'Credenciais inválidas' });
+      res.status(401).json({ success: false, error: 'Credenciais inválidas' });
       return;
     }
 
     const token = generateToken({ id: user.id, email: user.email, role: user.role });
 
     res.json({
-      token,
-      user: {
-        id: user.id,
-        nome: user.nome,
-        email: user.email,
-        cargo: user.cargo,
-        role: user.role,
+      success: true,
+      data: {
+        token,
+        user: {
+          id: user.id,
+          nome: user.nome,
+          email: user.email,
+          cargo: user.cargo,
+          role: user.role,
+        },
       },
     });
   } catch (err) {
     console.error('Erro no login:', err);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
 
@@ -51,12 +54,12 @@ router.post('/register', authMiddleware, requireRole('admin'), async (req: AuthR
   const { nome, email, senha, cargo, role } = req.body;
 
   if (!nome || !email || !senha) {
-    res.status(400).json({ error: 'Nome, email e senha são obrigatórios' });
+    res.status(400).json({ success: false, error: 'Nome, email e senha são obrigatórios' });
     return;
   }
 
   if (senha.length < 6) {
-    res.status(400).json({ error: 'A senha deve ter no mínimo 6 caracteres' });
+    res.status(400).json({ success: false, error: 'A senha deve ter no mínimo 6 caracteres' });
     return;
   }
 
@@ -67,7 +70,7 @@ router.post('/register', authMiddleware, requireRole('admin'), async (req: AuthR
     // Check if email already exists
     const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existing.rows.length > 0) {
-      res.status(409).json({ error: 'Este email já está cadastrado' });
+      res.status(409).json({ success: false, error: 'Este email já está cadastrado' });
       return;
     }
 
@@ -84,18 +87,21 @@ router.post('/register', authMiddleware, requireRole('admin'), async (req: AuthR
     const token = generateToken({ id: user.id, email: user.email, role: user.role });
 
     res.status(201).json({
-      token,
-      user: {
-        id: user.id,
-        nome: user.nome,
-        email: user.email,
-        cargo: user.cargo,
-        role: user.role,
+      success: true,
+      data: {
+        token,
+        user: {
+          id: user.id,
+          nome: user.nome,
+          email: user.email,
+          cargo: user.cargo,
+          role: user.role,
+        },
       },
     });
   } catch (err) {
     console.error('Erro no registro:', err);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
 
@@ -108,20 +114,20 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response): Promi
     );
 
     if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Usuário não encontrado' });
+      res.status(404).json({ success: false, error: 'Usuário não encontrado' });
       return;
     }
 
-    res.json({ user: result.rows[0] });
+    res.json({ success: true, data: { user: result.rows[0] } });
   } catch (err) {
     console.error('Erro ao buscar usuário:', err);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
 
 // POST /api/auth/logout (stateless — apenas confirma)
 router.post('/logout', authMiddleware, (_req: AuthRequest, res: Response): void => {
-  res.json({ ok: true, message: 'Logout realizado. Remova o token do client.' });
+  res.json({ success: true, data: { message: 'Logout realizado' } });
 });
 
 export default router;

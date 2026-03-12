@@ -10,7 +10,11 @@ router.get('/', authMiddleware, async (req: AuthRequest, res: Response): Promise
   try {
     const { periodo, tipo, gravidade, status, search } = req.query;
 
-    let query = 'SELECT * FROM incidents WHERE 1=1';
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const offset = (page - 1) * limit;
+
+    let query = 'SELECT id, tipo, gravidade, bairro, status, data, hora, descricao, latitude, longitude, created_at FROM incidents WHERE 1=1';
     const params: unknown[] = [];
     let paramIndex = 1;
 
@@ -51,30 +55,49 @@ router.get('/', authMiddleware, async (req: AuthRequest, res: Response): Promise
       paramIndex++;
     }
 
+    // Count total before adding ORDER BY / LIMIT / OFFSET
+    const countQuery = query.replace(
+      /^SELECT .+ FROM/,
+      'SELECT COUNT(*) FROM'
+    );
+    const countResult = await pool.query(countQuery, params);
+    const total = parseInt(countResult.rows[0].count, 10);
+
     query += ' ORDER BY data DESC, hora DESC NULLS LAST';
+    query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    params.push(limit, offset);
 
     const result = await pool.query(query, params);
-    res.json(result.rows);
+    res.json({
+      success: true,
+      data: result.rows,
+      meta: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+      },
+    });
   } catch (err) {
     console.error('Erro ao listar incidents:', err);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
 
 // GET /api/incidents/:id
 router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const result = await pool.query('SELECT * FROM incidents WHERE id = $1', [req.params.id]);
+    const result = await pool.query('SELECT id, tipo, gravidade, bairro, status, data, hora, descricao, latitude, longitude, created_at FROM incidents WHERE id = $1', [req.params.id]);
 
     if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Ocorrência não encontrada' });
+      res.status(404).json({ success: false, error: 'Ocorrência não encontrada' });
       return;
     }
 
-    res.json(result.rows[0]);
+    res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     console.error('Erro ao buscar incident:', err);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
 
@@ -87,7 +110,7 @@ router.post(
     const { id, tipo, gravidade, bairro, status, data, hora, descricao, latitude, longitude } = req.body;
 
     if (!id || !tipo || !gravidade || !bairro || !status || !data) {
-      res.status(400).json({ error: 'Campos obrigatórios: id, tipo, gravidade, bairro, status, data' });
+      res.status(400).json({ success: false, error: 'Campos obrigatórios: id, tipo, gravidade, bairro, status, data' });
       return;
     }
 
@@ -95,18 +118,18 @@ router.post(
       const result = await pool.query(
         `INSERT INTO incidents (id, tipo, gravidade, bairro, status, data, hora, descricao, latitude, longitude)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         RETURNING *`,
+         RETURNING id, tipo, gravidade, bairro, status, data, hora, descricao, latitude, longitude, created_at`,
         [id, tipo, gravidade, bairro, status, data, hora || null, descricao || null, latitude || null, longitude || null]
       );
 
-      res.status(201).json(result.rows[0]);
-    } catch (err: any) {
-      if (err.code === '23505') {
-        res.status(409).json({ error: `Ocorrência com ID "${id}" já existe` });
+      res.status(201).json({ success: true, data: result.rows[0] });
+    } catch (err: unknown) {
+      if (err instanceof Error && 'code' in err && (err as Record<string, unknown>).code === '23505') {
+        res.status(409).json({ success: false, error: 'Esta ocorrência já está cadastrada' });
         return;
       }
       console.error('Erro ao criar incident:', err);
-      res.status(500).json({ error: 'Erro interno do servidor' });
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
     }
   }
 );
@@ -132,19 +155,19 @@ router.put(
           latitude = COALESCE($8, latitude),
           longitude = COALESCE($9, longitude)
          WHERE id = $10
-         RETURNING *`,
+         RETURNING id, tipo, gravidade, bairro, status, data, hora, descricao, latitude, longitude, created_at`,
         [tipo, gravidade, bairro, status, data, hora, descricao, latitude, longitude, req.params.id]
       );
 
       if (result.rows.length === 0) {
-        res.status(404).json({ error: 'Ocorrência não encontrada' });
+        res.status(404).json({ success: false, error: 'Ocorrência não encontrada' });
         return;
       }
 
-      res.json(result.rows[0]);
+      res.json({ success: true, data: result.rows[0] });
     } catch (err) {
       console.error('Erro ao atualizar incident:', err);
-      res.status(500).json({ error: 'Erro interno do servidor' });
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
     }
   }
 );
@@ -159,14 +182,14 @@ router.delete(
       const result = await pool.query('DELETE FROM incidents WHERE id = $1 RETURNING id', [req.params.id]);
 
       if (result.rows.length === 0) {
-        res.status(404).json({ error: 'Ocorrência não encontrada' });
+        res.status(404).json({ success: false, error: 'Ocorrência não encontrada' });
         return;
       }
 
-      res.json({ ok: true, deleted: req.params.id });
+      res.json({ success: true, data: { deleted: req.params.id } });
     } catch (err) {
       console.error('Erro ao deletar incident:', err);
-      res.status(500).json({ error: 'Erro interno do servidor' });
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
     }
   }
 );
