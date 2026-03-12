@@ -3,6 +3,7 @@ import { X, PlusCircle, MapPin, AlertTriangle, Flame, Loader2 } from 'lucide-rea
 import { apiFetch } from '../services/api';
 import { createIncident } from '../services/incidents';
 import type { ApiIncident } from '../services/incidents';
+import { LocationPicker } from './LocationPicker';
 
 interface NovoAlertaModalProps {
   open: boolean;
@@ -12,8 +13,26 @@ interface NovoAlertaModalProps {
 
 const GRAVIDADES = ['Baixa', 'Média', 'Alta', 'Crítica'];
 
+interface FormState {
+  tipo: string;
+  gravidade: string;
+  bairro: string;
+  descricao: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+const INITIAL_FORM: FormState = {
+  tipo: '',
+  gravidade: 'Alta',
+  bairro: '',
+  descricao: '',
+  latitude: null,
+  longitude: null,
+};
+
 export function NovoAlertaModal({ open, onClose, onCreated }: NovoAlertaModalProps) {
-  const [form, setForm] = useState({ tipo: '', gravidade: 'Alta', bairro: '', descricao: '' });
+  const [form, setForm] = useState<FormState>({ ...INITIAL_FORM });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -52,16 +71,18 @@ export function NovoAlertaModal({ open, onClose, onCreated }: NovoAlertaModalPro
         data: today,
         hora,
         descricao: form.descricao || undefined,
+        latitude: form.latitude ?? undefined,
+        longitude: form.longitude ?? undefined,
       });
 
       onCreated?.(newIncident);
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
-        setForm({ tipo: '', gravidade: 'Alta', bairro: '', descricao: '' });
+        setForm({ ...INITIAL_FORM });
         onClose();
       }, 1800);
-    } catch (err) {
+    } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erro ao criar ocorrência');
     } finally {
       setSubmitting(false);
@@ -69,9 +90,9 @@ export function NovoAlertaModal({ open, onClose, onCreated }: NovoAlertaModalPro
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-fire-card border border-white/10 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
-        <div className="flex justify-between items-center p-6 border-b border-white/5">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-fire-card border border-white/10 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center p-6 border-b border-white/5 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="bg-fire-red/20 p-2 rounded-lg border border-fire-red/40">
               <Flame className="w-6 h-6 text-fire-red" />
@@ -98,7 +119,7 @@ export function NovoAlertaModal({ open, onClose, onCreated }: NovoAlertaModalPro
             <p className="text-xs text-fire-muted">A ocorrência foi registrada com sucesso.</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-[10px] font-black uppercase tracking-widest text-fire-muted block mb-2">
@@ -129,7 +150,7 @@ export function NovoAlertaModal({ open, onClose, onCreated }: NovoAlertaModalPro
                         form.gravidade === g
                           ? g === 'Crítica' ? 'bg-fire-red text-white'
                           : g === 'Alta' ? 'bg-fire-orange text-white'
-                          : g === 'Média' ? 'bg-yellow-500 text-white'
+                          : g === 'Média' ? 'bg-fire-yellow text-white'
                           : 'bg-fire-green text-white'
                           : 'bg-black/30 border border-white/10 text-fire-muted hover:text-white'
                       }`}
@@ -151,6 +172,22 @@ export function NovoAlertaModal({ open, onClose, onCreated }: NovoAlertaModalPro
                 onChange={(e) => setForm((f) => ({ ...f, bairro: e.target.value }))}
                 placeholder="Ex: Asa Norte, Taguatinga..."
                 className="w-full px-3 py-2.5 bg-black/30 border border-white/10 rounded-xl text-sm text-white placeholder-fire-muted focus:outline-none focus:border-fire-red"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-fire-muted block mb-2">
+                <span className="flex items-center space-x-1"><MapPin className="w-3 h-3" /><span>Localização no Mapa (clique para marcar)</span></span>
+              </label>
+              <LocationPicker
+                value={form.latitude !== null && form.longitude !== null ? { lat: form.latitude, lng: form.longitude } : null}
+                onChange={(coords) =>
+                  setForm((f) => ({
+                    ...f,
+                    latitude: coords?.lat ?? null,
+                    longitude: coords?.lng ?? null,
+                  }))
+                }
               />
             </div>
 

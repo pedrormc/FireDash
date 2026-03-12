@@ -52,7 +52,7 @@ Migrar o sistema Bombeiros de dados mockados (`mockData.ts`) para um banco Postg
 | `tipo` | `VARCHAR(50)` | NOT NULL | Tipo da ocorrência |
 | `gravidade` | `VARCHAR(20)` | NOT NULL | Crítica, Alta, Média, Baixa |
 | `bairro` | `VARCHAR(100)` | NOT NULL | Localização |
-| `status` | `VARCHAR(30)` | NOT NULL | Em Andamento, Finalizado |
+| `status` | `VARCHAR(30)` | NOT NULL | Em Andamento, Finalizado, Cancelada |
 | `data` | `DATE` | NOT NULL | Data da ocorrência |
 | `hora` | `INTEGER` | | 0-23 (opcional) |
 | `descricao` | `TEXT` | | Detalhes da ocorrência |
@@ -355,6 +355,28 @@ VITE_API_URL=http://localhost:3001/api   # dev
 
 ---
 
+## Fase 6 — Funcionalidades + UI/UX (Março 2026) ✅
+
+### Funcionalidades
+- [x] `updateIncident()` no service layer (PUT /api/incidents/:id)
+- [x] Tipos alinhados: `ApiIncident` em todos os componentes (antes usava `Incident` do mockData)
+- [x] Fix z-index de modais: `z-50` → `z-[70]` (NovoAlertaModal, IncidentModal) — acima do bottom nav e mapa
+- [x] Mini-mapa no formulário de criação (LocationPicker) — click para selecionar coordenadas + geolocalização
+- [x] Edição interativa de status no IncidentModal (admin/operador) — botões "Editar"/"Salvar" com status selecionável
+- [x] Status "Cancelada" suportado em filtros, tabelas e modais
+
+### UI/UX
+- [x] Topbar: nome e cargo do usuário real (via AuthContext), avatar com iniciais, removido search fake
+- [x] Tokens `fire-yellow` e `fire-blue` adicionados ao tema — substituição de cores raw (`yellow-500`, `blue-400`)
+- [x] MapaPage responsivo: layout empilha no mobile, side panel full-width, lista com scroll limitado
+- [x] FAB mobile "Novo Alerta" (PlusCircle) — visível só para admin/operador, acima do bottom nav
+- [x] NovoAlertaModal com scroll (`max-h-[90vh] overflow-y-auto`) para telas pequenas
+
+### Novos Componentes
+- `src/components/LocationPicker.tsx` — mini-mapa react-leaflet para seleção de coordenadas
+
+---
+
 ## Decisões Técnicas
 
 1. **Sem hash de senha (fase 1)** — simplifica o início. Migrar para bcrypt na fase de hardening.
@@ -363,3 +385,5 @@ VITE_API_URL=http://localhost:3001/api   # dev
 4. **IDs de incident como string** — mantém o padrão BMB-XXX já existente.
 5. **KPIs estáticos** — armazenados no banco, editáveis pelo admin.
 6. **Mapa** — incidents precisarão de lat/lng; os 60 markers do MapaPage serão migrados para a tabela incidents com coordenadas.
+7. **LocationPicker** — mini-mapa reutilizável com react-leaflet, usa mesmo tile dark do CartoDB.
+8. **Z-index hierarchy** — bottom nav: z-50, FAB: z-[60], modais: z-[70], Leaflet overlays: z-[1000].

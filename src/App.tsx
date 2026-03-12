@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { LayoutDashboard, FileText, Map, Settings } from 'lucide-react';
+import { LayoutDashboard, FileText, Map, Settings, PlusCircle } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -15,11 +15,10 @@ import { MapaPage } from './pages/MapaPage';
 import { ConfiguracoesPage } from './pages/ConfiguracoesPage';
 import { AdminPage } from './pages/AdminPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { fetchIncidents, deleteIncident } from './services/incidents';
+import { fetchIncidents, deleteIncident, updateIncident } from './services/incidents';
 import { fetchKpis } from './services/kpis';
 import type { ApiIncident } from './services/incidents';
 import type { Kpi } from './services/kpis';
-import type { Incident } from './data/mockData';
 
 type Page = 'dashboard' | 'relatorios' | 'mapa' | 'configuracoes' | 'admin';
 type Periodo = 'hoje' | 'semana' | 'mes';
@@ -70,7 +69,7 @@ function AuthenticatedApp() {
       ]);
       setIncidents(incData);
       setKpis(kpiData);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Erro ao carregar dados:', err);
     } finally {
       setLoading(false);
@@ -142,8 +141,20 @@ function AuthenticatedApp() {
     try {
       await deleteIncident(id);
       setIncidents((prev) => prev.filter((inc) => inc.id !== id));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Erro ao deletar:', err);
+    }
+  };
+
+  // Update incident via API
+  const handleUpdateIncident = async (id: string, data: { status: string }) => {
+    try {
+      const updated = await updateIncident(id, data);
+      setIncidents((prev) =>
+        prev.map((inc) => (inc.id === id ? { ...inc, ...updated } : inc)),
+      );
+    } catch (err: unknown) {
+      console.error('Erro ao atualizar:', err);
     }
   };
 
@@ -174,6 +185,8 @@ function AuthenticatedApp() {
   const allowedPages = ROLE_PAGES[user?.role || 'visualizador'] || ROLE_PAGES.visualizador;
   const visibleNavItems = navItems.filter((item) => allowedPages.includes(item.page));
 
+  const canCreateIncident = user?.role === 'admin' || user?.role === 'operador';
+
   return (
     <div className="bg-fire-dark text-white font-sans h-screen flex flex-col">
       <div className="flex flex-1 min-h-0">
@@ -195,6 +208,8 @@ function AuthenticatedApp() {
             subtitle={PAGE_TITLES[currentPage].subtitle}
             isDarkMode={isDarkMode}
             onToggleTheme={toggleTheme}
+            userName={user?.nome}
+            userRole={user?.cargo || user?.role}
           />
 
           {/* Page content */}
@@ -268,7 +283,7 @@ function AuthenticatedApp() {
                     <div className="flex items-center space-x-2">
                       <span className="text-[10px] font-black uppercase tracking-widest text-fire-muted">Status:</span>
                       <div className="flex gap-1">
-                        {['Todos', 'Em Andamento', 'Finalizado'].map((s) => (
+                        {['Todos', 'Em Andamento', 'Finalizado', 'Cancelada'].map((s) => (
                           <button
                             key={s}
                             onClick={() => setFilterStatus(s)}
@@ -303,6 +318,8 @@ function AuthenticatedApp() {
                 <IncidentTable
                   incidents={filteredIncidents}
                   onDelete={user?.role !== 'visualizador' ? handleDeleteIncident : undefined}
+                  onUpdate={user?.role !== 'visualizador' ? handleUpdateIncident : undefined}
+                  userRole={user?.role}
                 />
               </div>
             )}
@@ -312,6 +329,8 @@ function AuthenticatedApp() {
                 <RelatoriosPage
                   incidents={incidents}
                   onDelete={user?.role !== 'visualizador' ? handleDeleteIncident : undefined}
+                  onUpdate={user?.role !== 'visualizador' ? handleUpdateIncident : undefined}
+                  userRole={user?.role}
                 />
               </ProtectedRoute>
             )}
@@ -349,6 +368,17 @@ function AuthenticatedApp() {
           </button>
         ))}
       </nav>
+
+      {/* FAB mobile — Novo Alerta */}
+      {canCreateIncident && (
+        <button
+          onClick={() => setNovoAlertaOpen(true)}
+          className="md:hidden fixed bottom-20 right-4 z-[60] bg-fire-red hover:bg-red-700 text-white p-4 rounded-full shadow-lg shadow-fire-red/30 transition-colors"
+          title="Novo Alerta"
+        >
+          <PlusCircle className="w-6 h-6" />
+        </button>
+      )}
 
       <NovoAlertaModal
         open={novoAlertaOpen}

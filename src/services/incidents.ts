@@ -45,6 +45,26 @@ export async function createIncident(data: {
   });
 }
 
+export async function updateIncident(
+  id: string,
+  data: Partial<{
+    tipo: string;
+    gravidade: string;
+    bairro: string;
+    status: string;
+    data: string;
+    hora: number;
+    descricao: string;
+    latitude: number;
+    longitude: number;
+  }>,
+): Promise<ApiIncident> {
+  return apiFetch<ApiIncident>(`/incidents/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
 export async function deleteIncident(id: string): Promise<void> {
   await apiFetch(`/incidents/${id}`, { method: 'DELETE' });
 }

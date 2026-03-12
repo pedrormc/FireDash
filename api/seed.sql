@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   nome VARCHAR(100) NOT NULL,
   email VARCHAR(150) UNIQUE NOT NULL,
-  senha VARCHAR(100) NOT NULL,
+  senha VARCHAR(255) NOT NULL,
   cargo VARCHAR(100),
   role VARCHAR(20) NOT NULL DEFAULT 'visualizador',
   ativo BOOLEAN DEFAULT true,
@@ -52,10 +52,11 @@ CREATE TABLE IF NOT EXISTS kpis (
 -- DADOS INICIAIS
 -- =============================================
 
--- Usuário admin
-INSERT INTO users (nome, email, senha, cargo, role) VALUES
-  ('Administrador', 'admin@bombeiros.gov.br', 'admin123', 'Administrador do Sistema', 'admin')
-ON CONFLICT (email) DO NOTHING;
+-- Usuario admin (IMPORTANTE: nunca hardcode senhas aqui)
+-- Para criar o admin, gerar hash bcrypt e executar manualmente:
+--   1. Gerar hash: node -e "const bcrypt = require('bcrypt'); bcrypt.hash('SUA_SENHA_SEGURA', 12).then(h => console.log(h))"
+--   2. Inserir: INSERT INTO users (nome, email, senha, cargo, role) VALUES
+--      ('Administrador', 'admin@bombeiros.gov.br', '$2b$12$HASH_GERADO', 'Administrador do Sistema', 'admin');
 
 -- Tipos de ocorrência
 INSERT INTO tipos_ocorrencia (nome) VALUES
@@ -103,3 +104,11 @@ INSERT INTO incidents (id, tipo, gravidade, bairro, status, data, hora, descrica
   ('BMB-121', 'Incêndio Estrutural',    'Alta',    'Asa Norte',        'Finalizado',   '2026-02-08', NULL, 'Incêndio em apartamento do 5º andar, vizinhos evacuados preventivamente.'),
   ('BMB-122', 'Incêndio Florestal',     'Crítica', 'Planaltina',       'Em Andamento', '2026-02-05', NULL, 'Incêndio de origem criminosa suspeita em área de proteção ambiental.')
 ON CONFLICT (id) DO NOTHING;
+
+-- =============================================
+-- CONSTRAINTS (aplicar via migration separada)
+-- =============================================
+-- ALTER TABLE users ADD CONSTRAINT check_role CHECK (role IN ('admin', 'operador', 'visualizador'));
+-- ALTER TABLE incidents ADD CONSTRAINT check_hora CHECK (hora IS NULL OR (hora >= 0 AND hora <= 23));
+-- ALTER TABLE incidents ADD CONSTRAINT check_gravidade CHECK (gravidade IN ('Baixa', 'Média', 'Alta', 'Crítica'));
+-- ALTER TABLE incidents ADD CONSTRAINT check_status CHECK (status IN ('Em Andamento', 'Finalizado', 'Pendente'));

@@ -1,23 +1,42 @@
-import React, { useState } from 'react';
-import { X, MapPin, AlertTriangle, Info, Trash2 } from 'lucide-react';
-import type { Incident } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { X, MapPin, AlertTriangle, Info, Trash2, Pencil, Loader2, Save } from 'lucide-react';
+import type { ApiIncident } from '../services/incidents';
+
+const STATUS_OPTIONS = ['Em Andamento', 'Finalizado', 'Cancelada'] as const;
 
 interface IncidentModalProps {
-  incident: Incident | null;
+  incident: ApiIncident | null;
   onClose: () => void;
   onDelete?: (id: string) => void;
+  onUpdate?: (id: string, data: { status: string }) => void;
+  userRole?: string;
 }
 
-export function IncidentModal({ incident, onClose, onDelete }: IncidentModalProps) {
+export function IncidentModal({ incident, onClose, onDelete, onUpdate, userRole }: IncidentModalProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editStatus, setEditStatus] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  // Reset state when incident changes or modal closes
+  useEffect(() => {
+    setConfirmDelete(false);
+    setEditing(false);
+    setEditStatus(incident?.status ?? '');
+    setSaving(false);
+    setSaveError('');
+  }, [incident]);
 
   if (!incident) return null;
+
+  const canEdit = onUpdate && (userRole === 'admin' || userRole === 'operador');
 
   const getSeverityColor = (gravidade: string) => {
     switch (gravidade.toLowerCase()) {
       case 'crítica': return 'text-fire-red bg-fire-red/20 border-fire-red';
       case 'alta':    return 'text-fire-orange bg-fire-orange/20 border-fire-orange';
-      case 'média':   return 'text-yellow-500 bg-yellow-500/20 border-yellow-500';
+      case 'média':   return 'text-fire-yellow bg-fire-yellow/20 border-fire-yellow';
       case 'baixa':   return 'text-fire-green bg-fire-green/20 border-fire-green';
       default:        return 'text-slate-400 bg-slate-400/20 border-slate-400';
     }
@@ -25,8 +44,9 @@ export function IncidentModal({ incident, onClose, onDelete }: IncidentModalProp
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'em andamento': return 'text-blue-400 bg-blue-400/20';
+      case 'em andamento': return 'text-fire-blue bg-fire-blue/20';
       case 'finalizado':   return 'text-fire-green bg-fire-green/20';
+      case 'cancelada':    return 'text-fire-red bg-fire-red/20';
       default:             return 'text-slate-400 bg-slate-400/20';
     }
   };
@@ -38,8 +58,25 @@ export function IncidentModal({ incident, onClose, onDelete }: IncidentModalProp
     }
   };
 
+  const handleSave = async () => {
+    if (!onUpdate || editStatus === incident.status) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    setSaveError('');
+    try {
+      onUpdate(incident.id, { status: editStatus });
+      setEditing(false);
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : 'Erro ao salvar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-fire-card border border-white/10 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-white/5">
@@ -88,9 +125,28 @@ export function IncidentModal({ incident, onClose, onDelete }: IncidentModalProp
             </div>
             <div className="flex-1 bg-black/30 p-4 rounded-xl border border-white/5 flex flex-col items-center text-center">
               <span className="text-[10px] font-bold uppercase tracking-widest text-fire-muted mb-2">Status</span>
-              <span className={`px-3 py-1 text-xs font-black rounded uppercase tracking-wider ${getStatusColor(incident.status)}`}>
-                {incident.status}
-              </span>
+              {editing ? (
+                <div className="flex gap-1.5 flex-wrap justify-center">
+                  {STATUS_OPTIONS.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setEditStatus(s)}
+                      className={`px-2.5 py-1 text-[10px] font-black rounded uppercase tracking-wider transition-colors ${
+                        editStatus === s
+                          ? getStatusColor(s)
+                          : 'bg-white/5 text-fire-muted hover:text-white border border-white/10'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <span className={`px-3 py-1 text-xs font-black rounded uppercase tracking-wider ${getStatusColor(incident.status)}`}>
+                  {incident.status}
+                </span>
+              )}
             </div>
             <div className="flex-1 bg-black/30 p-4 rounded-xl border border-white/5 flex flex-col items-center text-center">
               <span className="text-[10px] font-bold uppercase tracking-widest text-fire-muted mb-2">Data</span>
@@ -104,6 +160,12 @@ export function IncidentModal({ incident, onClose, onDelete }: IncidentModalProp
             <div className="bg-black/30 p-4 rounded-xl border border-white/5">
               <span className="text-[10px] font-bold uppercase tracking-widest text-fire-muted block mb-2">Descrição</span>
               <p className="text-sm text-zinc-300 leading-relaxed">{incident.descricao}</p>
+            </div>
+          )}
+
+          {saveError && (
+            <div className="bg-fire-red/10 border border-fire-red/30 rounded-xl px-4 py-3 text-fire-red text-xs font-medium">
+              {saveError}
             </div>
           )}
 
@@ -131,22 +193,53 @@ export function IncidentModal({ incident, onClose, onDelete }: IncidentModalProp
 
         {/* Footer */}
         <div className="p-4 border-t border-white/5 bg-black/20 flex justify-between items-center">
-          {onDelete && !confirmDelete && (
-            <button
-              onClick={() => setConfirmDelete(true)}
-              className="flex items-center space-x-1.5 px-4 py-2 text-fire-red hover:bg-fire-red/10 border border-fire-red/30 font-bold rounded-xl transition-colors text-sm"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>Excluir</span>
-            </button>
-          )}
-          {!onDelete && <div />}
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors text-sm"
-          >
-            Fechar
-          </button>
+          <div className="flex items-center space-x-2">
+            {onDelete && !confirmDelete && !editing && (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="flex items-center space-x-1.5 px-4 py-2 text-fire-red hover:bg-fire-red/10 border border-fire-red/30 font-bold rounded-xl transition-colors text-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Excluir</span>
+              </button>
+            )}
+            {canEdit && !editing && !confirmDelete && (
+              <button
+                onClick={() => { setEditing(true); setEditStatus(incident.status); }}
+                className="flex items-center space-x-1.5 px-4 py-2 text-fire-blue hover:bg-fire-blue/10 border border-fire-blue/30 font-bold rounded-xl transition-colors text-sm"
+              >
+                <Pencil className="w-4 h-4" />
+                <span>Editar</span>
+              </button>
+            )}
+          </div>
+          <div className="flex items-center space-x-2">
+            {editing ? (
+              <>
+                <button
+                  onClick={() => setEditing(false)}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center space-x-1.5 px-4 py-2 bg-fire-green hover:bg-emerald-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  <span>Salvar</span>
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={onClose}
+                className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors text-sm"
+              >
+                Fechar
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

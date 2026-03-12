@@ -1,7 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'bombeiros-secret-dev';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
+
+const SECRET: string = JWT_SECRET;
 
 export interface AuthPayload {
   id: number;
@@ -24,7 +30,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   const token = header.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthPayload;
+    const decoded = jwt.verify(token, SECRET) as AuthPayload;
     req.user = decoded;
     next();
   } catch {
@@ -33,5 +39,5 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
 }
 
 export function generateToken(payload: AuthPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+  return jwt.sign(payload, SECRET, { expiresIn: '24h' });
 }

@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Search, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { IncidentModal } from './IncidentModal';
-import type { Incident } from '../data/mockData';
+import type { ApiIncident } from '../services/incidents';
 
 interface IncidentTableProps {
-  incidents: Incident[];
+  incidents: ApiIncident[];
   onDelete?: (id: string) => void;
+  onUpdate?: (id: string, data: { status: string }) => void;
+  userRole?: string;
 }
 
 type SortKey   = 'id' | 'tipo' | 'gravidade' | 'bairro' | 'status' | 'data';
@@ -19,8 +21,8 @@ function SortIcon({ dir }: { dir: SortDir }) {
   return <ChevronsUpDown className="w-3 h-3 inline ml-0.5 opacity-40" />;
 }
 
-export function IncidentTable({ incidents, onDelete }: IncidentTableProps) {
-  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+export function IncidentTable({ incidents, onDelete, onUpdate, userRole }: IncidentTableProps) {
+  const [selectedIncident, setSelectedIncident] = useState<ApiIncident | null>(null);
   const [search,  setSearch]  = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('data');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -66,7 +68,7 @@ export function IncidentTable({ incidents, onDelete }: IncidentTableProps) {
     switch (g.toLowerCase()) {
       case 'crítica': return 'text-fire-red bg-fire-red/20';
       case 'alta':    return 'text-fire-orange bg-fire-orange/20';
-      case 'média':   return 'text-yellow-500 bg-yellow-500/20';
+      case 'média':   return 'text-fire-yellow bg-fire-yellow/20';
       case 'baixa':   return 'text-fire-green bg-fire-green/20';
       default:        return 'text-slate-400 bg-slate-400/20';
     }
@@ -74,8 +76,9 @@ export function IncidentTable({ incidents, onDelete }: IncidentTableProps) {
 
   const getStatusColor = (s: string) => {
     switch (s.toLowerCase()) {
-      case 'em andamento': return 'text-blue-400 bg-blue-400/20';
+      case 'em andamento': return 'text-fire-blue bg-fire-blue/20';
       case 'finalizado':   return 'text-fire-green bg-fire-green/20';
+      case 'cancelada':    return 'text-fire-red bg-fire-red/20';
       default:             return 'text-slate-400 bg-slate-400/20';
     }
   };
@@ -176,6 +179,8 @@ export function IncidentTable({ incidents, onDelete }: IncidentTableProps) {
         incident={selectedIncident}
         onClose={() => setSelectedIncident(null)}
         onDelete={onDelete ? (id) => { onDelete(id); setSelectedIncident(null); } : undefined}
+        onUpdate={onUpdate}
+        userRole={userRole}
       />
     </>
   );

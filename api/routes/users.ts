@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import bcrypt from 'bcrypt';
 import pool from '../db.js';
 import { AuthRequest, authMiddleware } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
@@ -43,17 +44,19 @@ router.post(
     }
 
     try {
+      const hash = await bcrypt.hash(senha, 12);
+
       const result = await pool.query(
         `INSERT INTO users (nome, email, senha, cargo, role)
          VALUES ($1, $2, $3, $4, $5)
          RETURNING id, nome, email, cargo, role, ativo, created_at`,
-        [nome, email, senha, cargo || null, role || 'visualizador']
+        [nome, email, hash, cargo || null, role || 'visualizador']
       );
 
       res.status(201).json(result.rows[0]);
-    } catch (err: any) {
-      if (err.code === '23505') {
-        res.status(409).json({ error: `Email "${email}" já está em uso` });
+    } catch (err: unknown) {
+      if (err instanceof Error && 'code' in err && (err as Record<string, unknown>).code === '23505') {
+        res.status(409).json({ error: 'Este email já está cadastrado' });
         return;
       }
       console.error('Erro ao criar usuário:', err);
@@ -77,6 +80,8 @@ router.put(
     }
 
     try {
+      const hash = senha ? await bcrypt.hash(senha, 12) : null;
+
       const result = await pool.query(
         `UPDATE users SET
           nome = COALESCE($1, nome),
@@ -87,7 +92,7 @@ router.put(
           ativo = COALESCE($6, ativo)
          WHERE id = $7
          RETURNING id, nome, email, cargo, role, ativo, created_at`,
-        [nome, email, senha || null, cargo, role, ativo, req.params.id]
+        [nome, email, hash, cargo, role, ativo, req.params.id]
       );
 
       if (result.rows.length === 0) {
@@ -96,9 +101,9 @@ router.put(
       }
 
       res.json(result.rows[0]);
-    } catch (err: any) {
-      if (err.code === '23505') {
-        res.status(409).json({ error: `Email "${email}" já está em uso` });
+    } catch (err: unknown) {
+      if (err instanceof Error && 'code' in err && (err as Record<string, unknown>).code === '23505') {
+        res.status(409).json({ error: 'Este email já está cadastrado' });
         return;
       }
       console.error('Erro ao atualizar usuário:', err);

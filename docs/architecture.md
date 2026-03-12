@@ -50,14 +50,15 @@ Sem router library. O estado `currentPage` em `App.tsx` controla qual página é
 src/
 ├── components/             # Componentes compartilhados
 │   ├── Sidebar.tsx                # Navegação lateral + user info + logout
-│   ├── Topbar.tsx                 # Barra superior dinâmica
+│   ├── Topbar.tsx                 # Barra superior: título, tema, nome/cargo real, avatar iniciais
 │   ├── KpiCards.tsx               # Cards de indicadores (recebe via props)
 │   ├── MapSection.tsx             # Mapa interativo com Leaflet
 │   ├── ChartsSection.tsx          # Gráficos com Recharts (dados da API)
 │   ├── SystemStatus.tsx           # Status do sistema
-│   ├── IncidentTable.tsx          # Tabela de ocorrências
-│   ├── IncidentModal.tsx          # Detalhes de ocorrência
-│   ├── NovoAlertaModal.tsx        # Criar novo alerta (POST via API + tipos dinâmicos)
+│   ├── LocationPicker.tsx         # Mini-mapa react-leaflet para seleção de coordenadas
+│   ├── IncidentTable.tsx          # Tabela de ocorrências (com update e delete via API)
+│   ├── IncidentModal.tsx          # Detalhes + edição de status (admin/operador)
+│   ├── NovoAlertaModal.tsx        # Criar novo alerta (POST + LocationPicker + tipos dinâmicos)
 │   ├── ProtectedRoute.tsx         # Wrapper de proteção por role
 │   └── ZoneStatus.tsx             # Status por zona
 ├── pages/
@@ -70,7 +71,7 @@ src/
 │   └── AuthContext.tsx            # Context: user, loading, login(), logout()
 ├── services/
 │   ├── api.ts                     # Fetch wrapper com JWT, baseURL, 401 redirect
-│   ├── incidents.ts               # fetchIncidents, createIncident, deleteIncident
+│   ├── incidents.ts               # fetchIncidents, createIncident, updateIncident, deleteIncident
 │   ├── kpis.ts                    # fetchKpis
 │   └── users.ts                   # fetchUsers, createUser, updateUser, deactivateUser
 ├── data/
@@ -138,8 +139,34 @@ App.tsx (loadData)
 
 - Incidents e KPIs são carregados uma vez ao montar `AuthenticatedApp`
 - Filtros no Dashboard são aplicados client-side sobre os dados já carregados
-- Criação/exclusão de incidents atualiza o estado local imediatamente (optimistic)
+- Criação/exclusão/atualização de incidents atualiza o estado local imediatamente (optimistic)
 - Alerts são derivados dos últimos 3 incidents "Em Andamento" (sem tabela própria)
+- Status suportados: "Em Andamento", "Finalizado", "Cancelada"
+
+## Design Tokens (Tailwind CSS v4)
+
+Tokens customizados definidos em `src/index.css`:
+
+| Token | Valor | Uso |
+|---|---|---|
+| `fire-dark` | `#0f0c0c` | Background principal |
+| `fire-card` | `#1a1616` | Background de cards |
+| `fire-red` | `#e11d48` | Ações primárias, crítico, cancelada |
+| `fire-orange` | `#f59e0b` | Gravidade alta |
+| `fire-green` | `#10b981` | Sucesso, finalizado, gravidade baixa |
+| `fire-yellow` | `#eab308` | Gravidade média |
+| `fire-blue` | `#3b82f6` | Status "Em Andamento", informativo |
+| `fire-sidebar` | `#141111` | Background do sidebar |
+| `fire-muted` | `#9ca3af` | Texto secundário |
+
+## Z-Index Hierarchy
+
+| Camada | Z-Index | Componente |
+|---|---|---|
+| Bottom nav (mobile) | `z-50` | `nav` em App.tsx |
+| FAB (mobile) | `z-[60]` | Botão "Novo Alerta" |
+| Modais | `z-[70]` | NovoAlertaModal, IncidentModal |
+| Leaflet overlays | `z-[1000]` | Map overlay badge |
 
 ## Deploy
 
@@ -154,13 +181,14 @@ App.tsx (loadData)
 | Componente | Responsabilidade |
 |---|---|
 | Sidebar | Navegação lateral, user info, botão novo alerta, logout |
-| Topbar | Título dinâmico por página, toggle de tema |
+| Topbar | Título dinâmico, toggle de tema, nome/cargo real do usuário, avatar iniciais |
 | KpiCards | Cards de indicadores (recebe kpis via props) |
 | MapSection | Mapa interativo com Leaflet |
 | ChartsSection | Gráficos com Recharts (recebe incidents via props) |
 | SystemStatus | Status do sistema |
-| IncidentTable | Tabela de ocorrências com ações |
-| IncidentModal | Detalhes de ocorrência |
-| NovoAlertaModal | Criar novo alerta via API + tipos dinâmicos |
+| LocationPicker | Mini-mapa react-leaflet para seleção de coordenadas (lat/lng) |
+| IncidentTable | Tabela de ocorrências com update/delete via API |
+| IncidentModal | Detalhes + edição de status (admin/operador) |
+| NovoAlertaModal | Criar novo alerta via API + LocationPicker + tipos dinâmicos |
 | ProtectedRoute | Wrapper que verifica role do usuário |
 | ZoneStatus | Status por zona |

@@ -1,6 +1,8 @@
 import { Router, Response } from 'express';
+import bcrypt from 'bcrypt';
 import pool from '../db.js';
 import { AuthRequest, authMiddleware, generateToken } from '../middleware/auth.js';
+import { requireRole } from '../middleware/roles.js';
 
 const router = Router();
 
@@ -15,19 +17,14 @@ router.post('/login', async (req: AuthRequest, res: Response): Promise<void> => 
 
   try {
     const result = await pool.query(
-      'SELECT id, nome, email, cargo, role, ativo FROM users WHERE email = $1 AND senha = $2',
-      [email, senha]
+      'SELECT id, nome, email, senha, cargo, role, ativo FROM users WHERE email = $1',
+      [email]
     );
-
-    if (result.rows.length === 0) {
-      res.status(401).json({ error: 'Credenciais inválidas' });
-      return;
-    }
 
     const user = result.rows[0];
 
-    if (!user.ativo) {
-      res.status(403).json({ error: 'Conta desativada. Contate o administrador.' });
+    if (!user || !user.ativo || !(await bcrypt.compare(senha, user.senha))) {
+      res.status(401).json({ error: 'Credenciais inválidas' });
       return;
     }
 
@@ -50,7 +47,7 @@ router.post('/login', async (req: AuthRequest, res: Response): Promise<void> => 
 });
 
 // POST /api/auth/register
-router.post('/register', async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/register', authMiddleware, requireRole('admin'), async (req: AuthRequest, res: Response): Promise<void> => {
   const { nome, email, senha, cargo, role } = req.body;
 
   if (!nome || !email || !senha) {
@@ -63,7 +60,8 @@ router.post('/register', async (req: AuthRequest, res: Response): Promise<void> 
     return;
   }
 
-  const userRole = role && ['admin', 'operador', 'visualizador'].includes(role) ? role : 'visualizador';
+  const validRoles = ['admin', 'operador', 'visualizador'];
+  const userRole = role && validRoles.includes(role) ? role : 'visualizador';
 
   try {
     // Check if email already exists
@@ -73,11 +71,13 @@ router.post('/register', async (req: AuthRequest, res: Response): Promise<void> 
       return;
     }
 
+    const hash = await bcrypt.hash(senha, 12);
+
     const result = await pool.query(
       `INSERT INTO users (nome, email, senha, cargo, role, ativo)
        VALUES ($1, $2, $3, $4, $5, true)
        RETURNING id, nome, email, cargo, role`,
-      [nome, email, senha, cargo || null, userRole]
+      [nome, email, hash, cargo || null, userRole]
     );
 
     const user = result.rows[0];
