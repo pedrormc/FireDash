@@ -19,13 +19,14 @@
 
 ## Sobre o Projeto
 
-Sistema web completo para monitoramento e gestao de ocorrencias do corpo de bombeiros, com dashboard interativo, mapa georreferenciado, graficos analiticos, geracao de relatorios com IA (Gemini), API REST com hardening de seguranca e autenticacao com 3 niveis de acesso.
+Sistema web completo para monitoramento e gestao de ocorrencias do corpo de bombeiros, com dashboard interativo, mapa georreferenciado, graficos analiticos, sistema de notificacoes, geracao de relatorios com IA (Gemini), API REST com hardening de seguranca e autenticacao com 3 niveis de acesso.
 
 ### Funcionalidades
 
 - **Dashboard** — KPIs em tempo real, tabela de ocorrencias com ordenacao/busca, graficos de tendencias, status por zona e alertas ativos
 - **Mapa Interativo** — Visualizacao georreferenciada de ocorrencias com Leaflet, marcadores animados por gravidade, side panel com lista de focos e controle de camadas
 - **Novo Alerta** — Cadastro de ocorrencias com mini-mapa para selecao de coordenadas (click ou geolocalizacao GPS) e tipos dinamicos da API
+- **Notificacoes** — Sistema de alertas com badge dinamica, painel de notificacoes, dismiss individual ou em massa
 - **Edicao de Status** — Alteracao de status diretamente no modal de detalhes (admin/operador) com salvamento via API
 - **Relatorios** — Historico filtrado com busca, filtros de gravidade/status e geracao de relatorios com IA (Gemini)
 - **Painel Admin** — CRUD completo de usuarios com controle de roles e ativacao/desativacao
@@ -61,21 +62,24 @@ Sistema web completo para monitoramento e gestao de ocorrencias do corpo de bomb
 src/                        # Frontend (React SPA)
 ├── components/
 │   ├── Sidebar.tsx                # Navegacao lateral + user info + logout
-│   ├── Topbar.tsx                 # Titulo, tema, nome/cargo do usuario, avatar com iniciais
+│   ├── Topbar.tsx                 # Titulo, tema, nome/cargo do usuario, avatar, badge notificacoes
 │   ├── KpiCards.tsx               # Cards de indicadores (dados da API)
 │   ├── LocationPicker.tsx         # Mini-mapa para selecao de coordenadas (react-leaflet)
 │   ├── ChartsSection.tsx          # Graficos analiticos (Recharts)
 │   ├── IncidentTable.tsx          # Tabela de ocorrencias (ordenacao, busca, update/delete)
 │   ├── IncidentModal.tsx          # Detalhes + edicao de status (admin/operador)
 │   ├── NovoAlertaModal.tsx        # Criar alerta (POST + LocationPicker + tipos dinamicos)
+│   ├── NotificationPanel.tsx      # Painel de notificacoes (alerts API, dismiss individual/todos)
 │   ├── ProtectedRoute.tsx         # Wrapper de protecao por role
-│   └── ZoneStatus.tsx             # Status por zona geografica
+│   ├── ZoneStatus.tsx             # Status por zona geografica
+│   ├── MapSection.tsx             # Mapa interativo com Leaflet (componente legado)
+│   └── SystemStatus.tsx           # Status do sistema
 ├── pages/
 │   ├── LoginPage.tsx              # Tela de login
 │   ├── RegisterPage.tsx           # Cadastro de usuarios (somente admin)
 │   ├── AdminPage.tsx              # Painel admin (CRUD de usuarios)
 │   ├── RelatoriosPage.tsx         # Historico com filtros e edicao
-│   ├── MapaPage.tsx               # Mapa georreferenciado (responsivo)
+│   ├── MapaPage.tsx               # Mapa georreferenciado (isolate stacking context)
 │   └── ConfiguracoesPage.tsx      # Preferencias e dados do usuario
 ├── contexts/
 │   └── AuthContext.tsx            # Estado global de autenticacao (user, login, register, logout)
@@ -83,11 +87,14 @@ src/                        # Frontend (React SPA)
 │   ├── api.ts                     # Fetch wrapper com JWT, baseURL e unwrap de envelope
 │   ├── incidents.ts               # fetchIncidents, createIncident, updateIncident, deleteIncident
 │   ├── kpis.ts                    # fetchKpis
-│   └── users.ts                   # fetchUsers, createUser, updateUser, deactivateUser
+│   ├── users.ts                   # fetchUsers, createUser, updateUser, deactivateUser
+│   └── alerts.ts                  # fetchAlerts, fetchAlertCount, dismissAlert, dismissAllAlerts
+├── utils/
+│   └── statusColors.ts            # getStatusColor, getSeverityColor centralizados
 ├── data/
 │   └── mockData.ts                # Interfaces TypeScript (Incident, etc.)
-├── index.css                      # Tokens fire-* e estilos globais (dark/light theme)
-└── App.tsx                        # Orquestrador: auth, dados, filtros, navegacao, FAB mobile
+├── index.css                      # Tokens fire-* e estilos globais (dark/light theme, Leaflet)
+└── App.tsx                        # Orquestrador: auth, dados, filtros, navegacao, alerts, FAB mobile
 
 api/                        # Backend (Express API REST)
 ├── index.ts                # Express app + helmet + rate-limit + CORS + rotas
@@ -101,12 +108,14 @@ api/                        # Backend (Express API REST)
 │   ├── incidents.ts        # CRUD + filtros + paginacao
 │   ├── kpis.ts             # GET/PUT KPIs
 │   ├── tipos.ts            # CRUD tipos de ocorrencia
-│   └── users.ts            # CRUD usuarios (admin only, bcrypt hash)
+│   ├── users.ts            # CRUD usuarios (admin only, bcrypt hash)
+│   └── alerts.ts           # GET alerts, GET count, PATCH dismiss, PATCH dismiss-all
 ├── utils/
 │   └── validation.ts       # Validadores centralizados (email, enums, length, ID)
 └── migrations/
     ├── 001_hash_passwords.ts          # Migrar senhas texto plano para bcrypt
-    └── 002_schema_constraints.sql     # CHECK constraints + indexes
+    ├── 002_schema_constraints.sql     # CHECK constraints + indexes
+    └── 003_alerts_and_status.sql      # Tabela alerts + constraint 5 status
 
 docs/                       # Documentacao
 ├── architecture.md         # Arquitetura detalhada do sistema
@@ -137,6 +146,11 @@ npm install
 ```bash
 # Criar tabelas e dados iniciais
 psql -U <usuario> -d bombeiros -f api/seed.sql
+
+# Executar migrations
+npx tsx api/migrations/001_hash_passwords.ts
+psql -U <usuario> -d bombeiros -f api/migrations/002_schema_constraints.sql
+psql -U <usuario> -d bombeiros -f api/migrations/003_alerts_and_status.sql
 
 # Criar usuario admin (gerar hash bcrypt primeiro)
 node -e "const bcrypt = require('bcrypt'); bcrypt.hash('SUA_SENHA', 12).then(h => console.log(h))"
@@ -249,6 +263,15 @@ Respostas seguem envelope padronizado:
 
 **Paginacao:** `?page=1&limit=50` — resposta inclui `meta: { total, page, limit, pages }`
 
+### Alertas (Notificacoes)
+
+| Metodo | Rota | Descricao | Acesso |
+|---|---|---|---|
+| `GET` | `/api/alerts` | Listar alertas ativos (com dados do incident) | Autenticado |
+| `GET` | `/api/alerts/count` | Contar alertas ativos | Autenticado |
+| `PATCH` | `/api/alerts/:id/dismiss` | Dispensar alerta individual | Operador, Admin |
+| `PATCH` | `/api/alerts/dismiss-all` | Dispensar todos os alertas | Operador, Admin |
+
 ### KPIs, Tipos e Usuarios
 
 | Metodo | Rota | Descricao | Acesso |
@@ -310,12 +333,13 @@ AuthProvider (contexto global)
     ├── LoginPage / RegisterPage
     └── AuthenticatedApp (carrega dados da API)
         ├── Sidebar (navegacao + user info + logout)
-        ├── Topbar (titulo, tema, nome/cargo real, avatar)
+        ├── Topbar (titulo, tema, nome/cargo, avatar, notificacoes)
+        │   └── NotificationPanel (alerts com dismiss)
         ├── Dashboard
         │   ├── KpiCards, ChartsSection, ZoneStatus
         │   └── IncidentTable (com update/delete)
         ├── RelatoriosPage (filtros + edicao de status)
-        ├── MapaPage (mapa + side panel, responsivo)
+        ├── MapaPage (mapa + side panel, isolate stacking context)
         ├── ConfiguracoesPage
         ├── AdminPage (CRUD usuarios, admin only)
         ├── NovoAlertaModal (com LocationPicker)
@@ -324,12 +348,13 @@ AuthProvider (contexto global)
 
 ### Banco de Dados
 
-4 tabelas: `users`, `incidents`, `kpis`, `tipos_ocorrencia`.
+5 tabelas: `users`, `incidents`, `kpis`, `tipos_ocorrencia`, `alerts`.
 
-- Schema completo em `api/seed.sql`
-- CHECK constraints para role, gravidade, status, hora
+- Schema completo em `api/seed.sql` + `api/migrations/003_alerts_and_status.sql`
+- CHECK constraints para role, gravidade, status (5 valores), hora
 - Indexes para queries frequentes (status, data, tipo, gravidade)
 - TIMESTAMPTZ para timestamps
+- 5 status de ocorrencia: `Em Andamento`, `Finalizado`, `Pendente`, `Cancelada`, `Arquivado`
 
 ### Design Tokens
 
@@ -349,6 +374,18 @@ Tema customizado Tailwind CSS v4 com tokens `fire-*`:
 
 Suporta tema claro (`data-theme="light"`) com overrides automaticos.
 
+### Z-Index Hierarchy
+
+| Camada | Z-Index | Componente |
+|---|---|---|
+| Bottom nav (mobile) | `z-50` | `nav` em App.tsx |
+| FAB (mobile) | `z-[60]` | Botao "Novo Alerta" |
+| Modais | `z-[70]` | NovoAlertaModal, IncidentModal |
+| NotificationPanel | `z-[80]` | Painel de notificacoes no Topbar |
+| Map overlay badge | `z-[1000]` | Badge dentro do MapContainer (isolado) |
+
+> O wrapper do mapa usa CSS `isolation: isolate` para criar stacking context isolado, impedindo que z-indexes internos do Leaflet (200-700+) sobreponham modais e outros elementos da UI.
+
 ---
 
 ## Roadmap
@@ -364,7 +401,11 @@ Suporta tema claro (`data-theme="light"`) com overrides automaticos.
 - [x] Edicao interativa de status
 - [x] Responsividade mobile completa
 - [x] Tokens de cor padronizados
+- [x] Sistema de notificacoes (alerts API + NotificationPanel)
+- [x] 5 status de ocorrencia (Em Andamento, Finalizado, Pendente, Cancelada, Arquivado)
+- [x] Fix z-index: mapa Leaflet isolado com stacking context
 - [ ] JWT em httpOnly cookies
+- [ ] CSRF protection
 - [ ] Testes automatizados (Vitest + Playwright)
 - [ ] Notificacoes em tempo real (WebSocket)
 - [ ] CI/CD pipeline

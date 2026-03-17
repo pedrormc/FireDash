@@ -100,6 +100,7 @@ Copiar `.env.example` para `.env.local` e definir:
 - **Envelope de resposta** — `{ success, data/error }` em toda API
 - **Validacao de input** — Validar tudo no backend antes de processar
 - **Error handling** — try/catch em todo async, mensagens PT-BR no frontend
+- **isolate em mapas** — Wrapper do Leaflet usa `isolate` para conter z-indexes internos
 
 ## Referencias Rapidas
 
@@ -116,6 +117,7 @@ Copiar `.env.example` para `.env.local` e definir:
 | Decisoes (ADRs) | `docs/decisions/` |
 | SQL de seed | `api/seed.sql` |
 | Validacao utils | `api/utils/validation.ts` |
+| Status colors utils | `src/utils/statusColors.ts` |
 | Migrations | `api/migrations/` |
 
 ## ECC (Everything Claude Code) — Plugin Global
@@ -160,7 +162,7 @@ As rules/skills **deste projeto** (`.claude/`) complementam o ECC com regras esp
 | P2 | Sem paginacao na listagem de incidents | Resolvido |
 | P2 | Sem CSRF protection (depende de httpOnly cookies) | Pendente |
 
-## Migrations Pendentes (executar antes do deploy)
+## Migrations
 
 ```bash
 # 1. Hash senhas existentes no banco
@@ -169,7 +171,8 @@ npx tsx api/migrations/001_hash_passwords.ts
 # 2. Adicionar constraints e indexes
 psql $DATABASE_URL -f api/migrations/002_schema_constraints.sql
 
-# 3. Rotacionar senha admin na VPS (comprometida no git history)
+# 3. Criar tabela alerts + atualizar constraint de status (5 status)
+psql $DATABASE_URL -f api/migrations/003_alerts_and_status.sql
 ```
 
 ## Arquitetura (resumo)
@@ -189,12 +192,41 @@ psql $DATABASE_URL -f api/migrations/002_schema_constraints.sql
 
 ```
 src/                    # Frontend (React SPA)
-├── components/         # Componentes compartilhados (Sidebar, Topbar, KpiCards, ProtectedRoute, etc.)
-├── pages/              # Paginas (LoginPage, AdminPage, RelatoriosPage, MapaPage, ConfiguracoesPage)
-├── contexts/           # Estado global (AuthContext)
-├── services/           # Comunicacao com API (api.ts, incidents.ts, kpis.ts, users.ts)
-├── data/               # Interfaces TypeScript (Incident, etc.)
-├── App.tsx             # Orquestrador: auth, carregamento de dados, filtros, navegacao
+├── components/         # Componentes compartilhados
+│   ├── Sidebar.tsx              # Navegacao lateral + user info + logout
+│   ├── Topbar.tsx               # Titulo, tema, nome/cargo, avatar, badge notificacoes
+│   ├── KpiCards.tsx             # Cards de indicadores (dados da API)
+│   ├── ChartsSection.tsx        # Graficos analiticos (Recharts)
+│   ├── IncidentTable.tsx        # Tabela de ocorrencias (ordenacao, busca, update/delete)
+│   ├── IncidentModal.tsx        # Detalhes + edicao de status (admin/operador)
+│   ├── NovoAlertaModal.tsx      # Criar alerta (POST + LocationPicker + tipos dinamicos)
+│   ├── LocationPicker.tsx       # Mini-mapa para selecao de coordenadas (react-leaflet)
+│   ├── NotificationPanel.tsx    # Painel de notificacoes (alerts da API, dismiss individual/todos)
+│   ├── ProtectedRoute.tsx       # Wrapper de protecao por role
+│   ├── ZoneStatus.tsx           # Status por zona geografica
+│   ├── MapSection.tsx           # Mapa interativo (componente legado, usado no dashboard)
+│   └── SystemStatus.tsx         # Status do sistema
+├── pages/
+│   ├── LoginPage.tsx            # Tela de login
+│   ├── RegisterPage.tsx         # Cadastro de usuarios (somente admin)
+│   ├── AdminPage.tsx            # Painel admin (CRUD de usuarios)
+│   ├── RelatoriosPage.tsx       # Historico com filtros, busca e edicao
+│   ├── MapaPage.tsx             # Mapa georreferenciado (Leaflet, isolate stacking context)
+│   └── ConfiguracoesPage.tsx    # Preferencias e dados do usuario
+├── contexts/
+│   └── AuthContext.tsx          # Estado global de autenticacao (user, login, register, logout)
+├── services/
+│   ├── api.ts                   # Fetch wrapper com JWT, baseURL e unwrap de envelope
+│   ├── incidents.ts             # fetchIncidents, createIncident, updateIncident, deleteIncident
+│   ├── kpis.ts                  # fetchKpis
+│   ├── users.ts                 # fetchUsers, createUser, updateUser, deactivateUser
+│   └── alerts.ts                # fetchAlerts, fetchAlertCount, dismissAlert, dismissAllAlerts
+├── utils/
+│   └── statusColors.ts          # getStatusColor, getSeverityColor centralizados
+├── data/
+│   └── mockData.ts              # Interfaces TypeScript (Incident, etc.)
+├── index.css                    # Tokens fire-* e estilos globais (dark/light theme, Leaflet)
+└── App.tsx                      # Orquestrador: auth, dados, filtros, navegacao, alerts, FAB mobile
 
 api/                    # Backend (Express API)
 ├── index.ts            # Entry point — Express app, helmet, rate-limit, CORS
@@ -208,12 +240,14 @@ api/                    # Backend (Express API)
 │   ├── incidents.ts    # CRUD ocorrencias + filtros + paginacao
 │   ├── kpis.ts         # GET/PUT KPIs
 │   ├── tipos.ts        # CRUD tipos de ocorrencia
-│   └── users.ts        # CRUD usuarios (admin only, bcrypt)
+│   ├── users.ts        # CRUD usuarios (admin only, bcrypt)
+│   └── alerts.ts       # GET alerts, GET count, PATCH dismiss, PATCH dismiss-all
 ├── utils/
 │   └── validation.ts   # Helpers de validacao (email, enums, length, ID format)
 ├── migrations/
-│   ├── 001_hash_passwords.ts       # Migration: hashear senhas existentes
-│   └── 002_schema_constraints.sql  # Constraints + indexes
+│   ├── 001_hash_passwords.ts          # Migration: hashear senhas existentes
+│   ├── 002_schema_constraints.sql     # Constraints + indexes
+│   └── 003_alerts_and_status.sql      # Tabela alerts + constraint 5 status
 
 .claude/                # Contexto para IA
 ├── rules/              # Regras operacionais (coding.md, testing.md)
@@ -224,12 +258,35 @@ api/                    # Backend (Express API)
 docs/                   # Documentacao do projeto
 ├── architecture.md
 ├── decisions/          # ADRs
-├── runbooks/           # Processos operacionais
+├── PRD-SECURITY-HARDENING.md  # Auditoria de seguranca (23 vulnerabilidades)
 ```
 
 ## Banco de Dados
 
-4 tabelas: `users`, `incidents`, `kpis`, `tipos_ocorrencia`. Schema completo em `api/seed.sql` e documentado no `PRD.md`.
+5 tabelas: `users`, `incidents`, `kpis`, `tipos_ocorrencia`, `alerts`. Schema completo em `api/seed.sql` (tabelas base) e `api/migrations/003_alerts_and_status.sql` (tabela alerts).
+
+### Status de Ocorrencias
+
+5 status validos: `Em Andamento`, `Finalizado`, `Pendente`, `Cancelada`, `Arquivado`
+
+### Tabela Alerts
+
+- Auto-criado ao criar incident (trigger ou via API)
+- `status`: `active` ou `dismissed`
+- `dismissed_by`: referencia ao user que dispensou
+- Indexes em `status`, `incident_id`, `created_at`
+
+## Z-Index Hierarchy
+
+| Camada | Z-Index | Componente |
+|---|---|---|
+| Bottom nav (mobile) | `z-50` | `nav` em App.tsx |
+| FAB (mobile) | `z-[60]` | Botao "Novo Alerta" |
+| Modais | `z-[70]` | NovoAlertaModal, IncidentModal |
+| NotificationPanel | `z-[80]` | Painel de notificacoes no Topbar |
+| Map overlay badge | `z-[1000]` | Badge dentro do MapContainer (isolado) |
+
+> O wrapper do mapa usa `isolate` para criar stacking context isolado, impedindo que z-indexes internos do Leaflet (200-700+) vazem e sobreponham modais.
 
 ## Roles e Acesso
 
