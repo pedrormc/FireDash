@@ -125,7 +125,7 @@ export function MapaPage({ incidents: rawIncidents }: MapaPageProps) {
 
       <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0">
         {/* Map */}
-        <div className="flex-1 rounded-2xl overflow-hidden relative min-h-[300px] md:min-h-[500px] border border-white/5">
+        <div className="flex-1 rounded-2xl overflow-hidden relative isolate min-h-[300px] md:min-h-[500px] border border-white/5">
           <MapContainer
             center={BRASILIA_CENTER}
             zoom={11}
