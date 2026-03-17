@@ -1,5 +1,5 @@
 export const VALID_GRAVIDADES = ['Baixa', 'Média', 'Alta', 'Crítica'] as const;
-export const VALID_STATUSES = ['Em Andamento', 'Finalizado', 'Pendente'] as const;
+export const VALID_STATUSES = ['Em Andamento', 'Finalizado', 'Pendente', 'Cancelada', 'Arquivado'] as const;
 export const VALID_ROLES = ['admin', 'operador', 'visualizador'] as const;
 
 export type Gravidade = typeof VALID_GRAVIDADES[number];

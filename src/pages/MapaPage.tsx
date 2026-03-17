@@ -21,13 +21,18 @@ interface MapaPageProps {
 
 const layerOptions = ['Focos de Incêndio', 'Viaturas em Campo', 'Zonas de Risco', 'Hidrantes'] as const;
 
+function getFireColor(varName: string, fallback: string): string {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  return value || fallback;
+}
+
 function gravityColor(gravidade: string) {
   switch (gravidade) {
-    case 'Crítica': return '#e11d48';
-    case 'Alta':    return '#f59e0b';
-    case 'Média':   return '#eab308';
-    case 'Baixa':   return '#10b981';
-    default:        return '#9ca3af';
+    case 'Crítica': return getFireColor('--color-fire-red', '#e11d48');
+    case 'Alta':    return getFireColor('--color-fire-orange', '#f59e0b');
+    case 'Média':   return getFireColor('--color-fire-yellow', '#eab308');
+    case 'Baixa':   return getFireColor('--color-fire-green', '#10b981');
+    default:        return getFireColor('--color-fire-muted', '#9ca3af');
   }
 }
 
@@ -57,10 +62,11 @@ function FlyToLocation({ position }: { position: [number, number] | null }) {
 }
 
 export function MapaPage({ incidents: rawIncidents }: MapaPageProps) {
-  // Filter incidents that have lat/lng
+  // Filter only active incidents with lat/lng
+  const ACTIVE_STATUSES = ['Em Andamento', 'Pendente'];
   const incidents = useMemo<MapIncident[]>(() => {
     return rawIncidents
-      .filter((inc) => inc.latitude != null && inc.longitude != null)
+      .filter((inc) => inc.latitude != null && inc.longitude != null && ACTIVE_STATUSES.includes(inc.status))
       .map((inc) => ({
         id: inc.id,
         tipo: inc.tipo,
@@ -125,10 +131,10 @@ export function MapaPage({ incidents: rawIncidents }: MapaPageProps) {
             zoom={11}
             style={{ height: '100%', width: '100%' }}
             zoomControl={false}
+            attributionControl={false}
           >
             <TileLayer
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             />
 
             <FlyToLocation position={flyTarget} />
@@ -189,7 +195,7 @@ export function MapaPage({ incidents: rawIncidents }: MapaPageProps) {
             </h5>
             <div className="space-y-3 overflow-y-auto flex-1 pr-1 max-h-[300px] md:max-h-none">
               {incidents.length === 0 && (
-                <p className="text-xs text-fire-muted text-center py-4">Nenhum incidente com coordenadas.</p>
+                <p className="text-xs text-fire-muted text-center py-4">Nenhum incidente ativo com coordenadas.</p>
               )}
               {incidents.map((inc) => (
                 <button

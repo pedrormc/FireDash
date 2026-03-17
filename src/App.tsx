@@ -17,8 +17,11 @@ import { AdminPage } from './pages/AdminPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { fetchIncidents, deleteIncident, updateIncident } from './services/incidents';
 import { fetchKpis } from './services/kpis';
+import { fetchAlerts, fetchAlertCount, dismissAlert, dismissAllAlerts } from './services/alerts';
+import { NotificationPanel } from './components/NotificationPanel';
 import type { ApiIncident } from './services/incidents';
 import type { Kpi } from './services/kpis';
+import type { ApiAlert } from './services/alerts';
 
 type Page = 'dashboard' | 'relatorios' | 'mapa' | 'configuracoes' | 'admin';
 type Periodo = 'hoje' | 'semana' | 'mes';
@@ -61,14 +64,21 @@ function AuthenticatedApp() {
   const [kpis, setKpis] = useState<Kpi[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ── Alerts / Notifications ────────────────────────────────
+  const [alertsData, setAlertsData] = useState<ApiAlert[]>([]);
+  const [alertCount, setAlertCount] = useState(0);
+  const [notifOpen, setNotifOpen] = useState(false);
+
   const loadData = useCallback(async () => {
     try {
-      const [incData, kpiData] = await Promise.all([
+      const [incData, kpiData, countData] = await Promise.all([
         fetchIncidents(),
         fetchKpis(),
+        fetchAlertCount().catch(() => 0),
       ]);
       setIncidents(incData);
       setKpis(kpiData);
+      setAlertCount(countData);
     } catch (err: unknown) {
       console.error('Erro ao carregar dados:', err);
     } finally {
@@ -161,6 +171,42 @@ function AuthenticatedApp() {
   // Called after creating a new incident
   const handleIncidentCreated = (newInc: ApiIncident) => {
     setIncidents((prev) => [newInc, ...prev]);
+    setAlertCount((prev) => prev + 1);
+  };
+
+  const handleBellClick = async () => {
+    if (notifOpen) {
+      setNotifOpen(false);
+      return;
+    }
+    try {
+      const data = await fetchAlerts();
+      setAlertsData(data);
+    } catch (err: unknown) {
+      console.error('Erro ao carregar alertas:', err);
+    }
+    setNotifOpen(true);
+  };
+
+  const handleDismissAlert = async (id: number) => {
+    try {
+      await dismissAlert(id);
+      setAlertsData((prev) => prev.filter((a) => a.id !== id));
+      setAlertCount((prev) => Math.max(0, prev - 1));
+    } catch (err: unknown) {
+      console.error('Erro ao dispensar alerta:', err);
+    }
+  };
+
+  const handleDismissAll = async () => {
+    try {
+      await dismissAllAlerts();
+      setAlertsData([]);
+      setAlertCount(0);
+      setNotifOpen(false);
+    } catch (err: unknown) {
+      console.error('Erro ao dispensar todos alertas:', err);
+    }
   };
 
   const hasActiveFilters = filterTipo !== 'Todos' || filterGravidade !== 'Todas' || filterStatus !== 'Todos';
@@ -210,6 +256,18 @@ function AuthenticatedApp() {
             onToggleTheme={toggleTheme}
             userName={user?.nome}
             userRole={user?.cargo || user?.role}
+            alertCount={alertCount}
+            onBellClick={handleBellClick}
+            notificationPanel={
+              notifOpen ? (
+                <NotificationPanel
+                  alerts={alertsData}
+                  onDismiss={handleDismissAlert}
+                  onDismissAll={handleDismissAll}
+                  onClose={() => setNotifOpen(false)}
+                />
+              ) : undefined
+            }
           />
 
           {/* Page content */}
@@ -282,8 +340,8 @@ function AuthenticatedApp() {
                     {/* Status */}
                     <div className="flex items-center space-x-2">
                       <span className="text-[10px] font-black uppercase tracking-widest text-fire-muted">Status:</span>
-                      <div className="flex gap-1">
-                        {['Todos', 'Em Andamento', 'Finalizado', 'Cancelada'].map((s) => (
+                      <div className="flex gap-1 flex-wrap">
+                        {['Todos', 'Em Andamento', 'Finalizado', 'Cancelada', 'Arquivado'].map((s) => (
                           <button
                             key={s}
                             onClick={() => setFilterStatus(s)}

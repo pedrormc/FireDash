@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { IncidentModal } from './IncidentModal';
+import { getStatusColor, getSeverityColor } from '../utils/statusColors';
 import type { ApiIncident } from '../services/incidents';
 
 interface IncidentTableProps {
@@ -63,25 +64,6 @@ export function IncidentTable({ incidents, onDelete, onUpdate, userRole }: Incid
     }
     return rows;
   }, [incidents, search, sortKey, sortDir]);
-
-  const getSeverityColor = (g: string) => {
-    switch (g.toLowerCase()) {
-      case 'crítica': return 'text-fire-red bg-fire-red/20';
-      case 'alta':    return 'text-fire-orange bg-fire-orange/20';
-      case 'média':   return 'text-fire-yellow bg-fire-yellow/20';
-      case 'baixa':   return 'text-fire-green bg-fire-green/20';
-      default:        return 'text-slate-400 bg-slate-400/20';
-    }
-  };
-
-  const getStatusColor = (s: string) => {
-    switch (s.toLowerCase()) {
-      case 'em andamento': return 'text-fire-blue bg-fire-blue/20';
-      case 'finalizado':   return 'text-fire-green bg-fire-green/20';
-      case 'cancelada':    return 'text-fire-red bg-fire-red/20';
-      default:             return 'text-slate-400 bg-slate-400/20';
-    }
-  };
 
   const th = (key: SortKey, label: string, extra = '') => (
     <th

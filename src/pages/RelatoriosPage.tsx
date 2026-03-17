@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { FileText, Download, Filter, Search, Eye } from 'lucide-react';
 import { IncidentModal } from '../components/IncidentModal';
+import { getStatusColor, getSeverityColor } from '../utils/statusColors';
 import type { ApiIncident } from '../services/incidents';
 
 const GRAVIDADES = ['Todas', 'Crítica', 'Alta', 'Média', 'Baixa'];
-const STATUS_OPTIONS = ['Todos', 'Em Andamento', 'Finalizado', 'Cancelada'];
+const STATUS_OPTIONS = ['Todos', 'Em Andamento', 'Finalizado', 'Cancelada', 'Arquivado'];
 
 interface RelatoriosPageProps {
   incidents: ApiIncident[];
@@ -29,29 +30,10 @@ export function RelatoriosPage({ incidents, onDelete, onUpdate, userRole }: Rela
     return matchSearch && matchGravidade && matchStatus;
   });
 
-  const getSeverityColor = (g: string) => {
-    switch (g.toLowerCase()) {
-      case 'crítica': return 'text-fire-red bg-fire-red/20';
-      case 'alta': return 'text-fire-orange bg-fire-orange/20';
-      case 'média': return 'text-fire-yellow bg-fire-yellow/20';
-      case 'baixa': return 'text-fire-green bg-fire-green/20';
-      default: return 'text-slate-400 bg-slate-400/20';
-    }
-  };
-
-  const getStatusColor = (s: string) => {
-    switch (s.toLowerCase()) {
-      case 'em andamento': return 'text-fire-blue bg-fire-blue/20';
-      case 'finalizado': return 'text-fire-green bg-fire-green/20';
-      case 'cancelada': return 'text-fire-red bg-fire-red/20';
-      default: return 'text-slate-400 bg-slate-400/20';
-    }
-  };
-
   return (
     <>
-      <div className="p-8 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="p-4 md:p-8 space-y-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-2xl font-black text-white">Relatórios de Ocorrências</h2>
             <p className="text-xs text-fire-muted uppercase tracking-widest mt-1">Histórico e filtros de incidentes registrados</p>
@@ -64,7 +46,7 @@ export function RelatoriosPage({ incidents, onDelete, onUpdate, userRole }: Rela
 
         {/* Filters */}
         <div className="bg-fire-card border border-white/5 rounded-2xl p-5 flex flex-wrap gap-4 items-center">
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative flex-1 min-w-0 w-full sm:min-w-[200px] sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fire-muted" />
             <input
               type="text"
@@ -95,7 +77,7 @@ export function RelatoriosPage({ incidents, onDelete, onUpdate, userRole }: Rela
 
           <div className="flex items-center space-x-2">
             <span className="text-xs text-fire-muted uppercase tracking-wider">Status:</span>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {STATUS_OPTIONS.map((s) => (
                 <button
                   key={s}

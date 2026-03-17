@@ -9,6 +9,7 @@ import incidentRoutes from './routes/incidents.js';
 import kpiRoutes from './routes/kpis.js';
 import tipoRoutes from './routes/tipos.js';
 import userRoutes from './routes/users.js';
+import alertRoutes from './routes/alerts.js';
 
 dotenv.config({ path: '.env.local' });
 
@@ -72,6 +73,7 @@ app.use('/api/incidents', incidentRoutes);
 app.use('/api/kpis', kpiRoutes);
 app.use('/api/tipos', tipoRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/alerts', alertRoutes);
 
 // Iniciar servidor (dev local)
 if (process.env.NODE_ENV !== 'production') {

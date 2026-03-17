@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, MapPin, AlertTriangle, Info, Trash2, Pencil, Loader2, Save } from 'lucide-react';
+import { X, MapPin, AlertTriangle, Info, Trash2, Pencil, Loader2, Save, Archive } from 'lucide-react';
 import type { ApiIncident } from '../services/incidents';
+import { getStatusColor, getSeverityColorWithBorder } from '../utils/statusColors';
 
-const STATUS_OPTIONS = ['Em Andamento', 'Finalizado', 'Cancelada'] as const;
+const STATUS_OPTIONS = ['Em Andamento', 'Finalizado', 'Cancelada', 'Arquivado'] as const;
 
 interface IncidentModalProps {
   incident: ApiIncident | null;
@@ -32,22 +33,10 @@ export function IncidentModal({ incident, onClose, onDelete, onUpdate, userRole 
 
   const canEdit = onUpdate && (userRole === 'admin' || userRole === 'operador');
 
-  const getSeverityColor = (gravidade: string) => {
-    switch (gravidade.toLowerCase()) {
-      case 'crítica': return 'text-fire-red bg-fire-red/20 border-fire-red';
-      case 'alta':    return 'text-fire-orange bg-fire-orange/20 border-fire-orange';
-      case 'média':   return 'text-fire-yellow bg-fire-yellow/20 border-fire-yellow';
-      case 'baixa':   return 'text-fire-green bg-fire-green/20 border-fire-green';
-      default:        return 'text-slate-400 bg-slate-400/20 border-slate-400';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'em andamento': return 'text-fire-blue bg-fire-blue/20';
-      case 'finalizado':   return 'text-fire-green bg-fire-green/20';
-      case 'cancelada':    return 'text-fire-red bg-fire-red/20';
-      default:             return 'text-slate-400 bg-slate-400/20';
+  const handleArchive = () => {
+    if (onUpdate) {
+      onUpdate(incident.id, { status: 'Arquivado' });
+      onClose();
     }
   };
 
@@ -81,7 +70,7 @@ export function IncidentModal({ incident, onClose, onDelete, onUpdate, userRole 
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-white/5">
           <div className="flex items-center space-x-3">
-            <div className={`p-2 rounded-lg border ${getSeverityColor(incident.gravidade)}`}>
+            <div className={`p-2 rounded-lg border ${getSeverityColorWithBorder(incident.gravidade)}`}>
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
@@ -99,7 +88,7 @@ export function IncidentModal({ incident, onClose, onDelete, onUpdate, userRole 
 
         {/* Body */}
         <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-black/30 p-4 rounded-xl border border-white/5">
               <div className="flex items-center space-x-2 text-fire-muted mb-2">
                 <Info className="w-4 h-4" />
@@ -116,10 +105,10 @@ export function IncidentModal({ incident, onClose, onDelete, onUpdate, userRole 
             </div>
           </div>
 
-          <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-3 sm:space-y-0">
             <div className="flex-1 bg-black/30 p-4 rounded-xl border border-white/5 flex flex-col items-center text-center">
               <span className="text-[10px] font-bold uppercase tracking-widest text-fire-muted mb-2">Gravidade</span>
-              <span className={`px-3 py-1 text-xs font-black rounded uppercase tracking-wider ${getSeverityColor(incident.gravidade)}`}>
+              <span className={`px-3 py-1 text-xs font-black rounded uppercase tracking-wider ${getSeverityColorWithBorder(incident.gravidade)}`}>
                 {incident.gravidade}
               </span>
             </div>
@@ -192,7 +181,7 @@ export function IncidentModal({ incident, onClose, onDelete, onUpdate, userRole 
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-white/5 bg-black/20 flex justify-between items-center">
+        <div className="p-4 border-t border-white/5 bg-black/20 flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
           <div className="flex items-center space-x-2">
             {onDelete && !confirmDelete && !editing && (
               <button
@@ -210,6 +199,15 @@ export function IncidentModal({ incident, onClose, onDelete, onUpdate, userRole 
               >
                 <Pencil className="w-4 h-4" />
                 <span>Editar</span>
+              </button>
+            )}
+            {canEdit && !editing && !confirmDelete && incident.status === 'Finalizado' && (
+              <button
+                onClick={handleArchive}
+                className="flex items-center space-x-1.5 px-4 py-2 text-fire-muted hover:bg-fire-muted/10 border border-fire-muted/30 font-bold rounded-xl transition-colors text-sm"
+              >
+                <Archive className="w-4 h-4" />
+                <span>Arquivar</span>
               </button>
             )}
           </div>

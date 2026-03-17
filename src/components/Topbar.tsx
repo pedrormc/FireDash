@@ -8,6 +8,9 @@ interface TopbarProps {
   onToggleTheme?: () => void;
   userName?: string;
   userRole?: string;
+  alertCount?: number;
+  onBellClick?: () => void;
+  notificationPanel?: React.ReactNode;
 }
 
 function getInitials(name: string): string {
@@ -26,6 +29,9 @@ export function Topbar({
   onToggleTheme,
   userName,
   userRole,
+  alertCount = 0,
+  onBellClick,
+  notificationPanel,
 }: TopbarProps) {
   const displayName = userName || 'Usuário';
   const displayRole = userRole || '';
@@ -47,10 +53,20 @@ export function Topbar({
             {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
         )}
-        <button className="relative p-2 text-fire-muted hover:text-white transition-colors">
-          <Bell className="h-5 w-5 md:h-6 md:w-6" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-fire-red rounded-full border-2 border-fire-dark"></span>
-        </button>
+        <div className="relative">
+          <button
+            onClick={onBellClick}
+            className="relative p-2 text-fire-muted hover:text-white transition-colors"
+          >
+            <Bell className="h-5 w-5 md:h-6 md:w-6" />
+            {alertCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-fire-red rounded-full border-2 border-fire-dark flex items-center justify-center">
+                <span className="text-[9px] font-black text-white leading-none">{alertCount > 99 ? '99+' : alertCount}</span>
+              </span>
+            )}
+          </button>
+          {notificationPanel}
+        </div>
         <div className="hidden md:flex items-center space-x-3 border-l border-white/10 pl-8">
           <div className="text-right">
             <p className="text-xs font-bold leading-none">{displayName}</p>

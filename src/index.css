@@ -70,11 +70,7 @@ html[data-theme="light"] .leaflet-popup-content-wrapper {
 html[data-theme="light"] .leaflet-popup-tip { background: #ffffff; }
 html[data-theme="light"] .leaflet-popup-close-button { color: #71717a !important; }
 html[data-theme="light"] .leaflet-popup-close-button:hover { color: #18181b !important; }
-html[data-theme="light"] .leaflet-control-attribution {
-  background: rgba(241,241,243,0.9) !important;
-  color: #71717a !important;
-}
-html[data-theme="light"] .leaflet-control-attribution a { color: #71717a !important; }
+/* Attribution hidden via attributionControl={false} */
 html[data-theme="light"] .map-overlay-badge {
   background: rgba(255,255,255,0.92);
   border: 1px solid rgba(0,0,0,0.1);
@@ -105,8 +101,7 @@ html[data-theme="light"] .map-overlay-badge {
 .leaflet-popup-close-button:hover { color: #fff !important; }
 .leaflet-popup-content       { margin: 12px 16px; }
 .leaflet-container           { background: #0f0c0c; border-radius: 1rem; }
-.leaflet-control-attribution { background: rgba(15,12,12,0.8) !important; color: #9ca3af !important; }
-.leaflet-control-attribution a { color: #9ca3af !important; }
+.leaflet-control-attribution { display: none !important; }
 
 /* ─── Incident markers ────────────────────────────────────── */
 .fire-marker-wrap {

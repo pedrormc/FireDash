@@ -122,6 +122,16 @@ router.post(
         [id, tipo, gravidade, bairro, status, data, hora || null, descricao || null, latitude || null, longitude || null]
       );
 
+      // Auto-create alert for new incident (non-blocking)
+      try {
+        await pool.query(
+          `INSERT INTO alerts (incident_id, type, message) VALUES ($1, 'new_incident', $2)`,
+          [id, `Nova ocorrência: ${tipo} em ${bairro} (${gravidade})`]
+        );
+      } catch (alertErr: unknown) {
+        console.error('Erro ao criar alerta automático:', alertErr);
+      }
+
       res.status(201).json({ success: true, data: result.rows[0] });
     } catch (err: unknown) {
       if (err instanceof Error && 'code' in err && (err as Record<string, unknown>).code === '23505') {
